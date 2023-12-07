@@ -81,6 +81,9 @@ class Recipe(models.Model):
         on_delete=models.CASCADE,
         verbose_name='автор'
     )
+    cooking_time = models.PositiveIntegerField(
+        verbose_name="Время приготовления, мин"
+    )
     # image = models.ImageField(
     #     upload_to='recipe_images/',
     #     verbose_name='изображение',
