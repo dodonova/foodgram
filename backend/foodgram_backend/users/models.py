@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 from foodgram_backend.settings import (
+    NAME_MAX_LENGTH,
     USERNAME_MAX_LENTH,
     EMAIL_MAX_LENGTH,
     PASSWORD_MAX_LENGTH
@@ -32,10 +33,7 @@ class User(AbstractUser):
         unique=True,
         blank=False
     )
-    password = models.CharField(
-        max_length=PASSWORD_MAX_LENGTH,
-        blank=False
-    )
+
     subscriptions = models.ManyToManyField(
         'self',
         through='Subscription',
@@ -44,6 +42,8 @@ class User(AbstractUser):
         verbose_name='подписки',
         blank=True
     )
+    first_name = models.CharField(max_length=USERNAME_MAX_LENTH)
+    last_name = models.CharField(max_length=USERNAME_MAX_LENTH)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ('username', 'password', 'first_name', 'last_name')
