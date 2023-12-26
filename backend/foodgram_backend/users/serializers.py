@@ -3,12 +3,6 @@ from rest_framework import serializers
 from users.models import User
 from foodgram_backend.settings import EMAIL_MAX_LENGTH, USERNAME_MAX_LENTH
 
-# class UserSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = User
-#         fields = (
-#             'id', 'email',  'username', 'first_name', 'last_name')
-
 
 class UserCreateSerializer(serializers.ModelSerializer):
     username = serializers.RegexField(
@@ -57,6 +51,7 @@ class UserWithSubscriptionSerializer(serializers.ModelSerializer):
             'id', 'email', 'username', 'first_name',
             'last_name', 'is_subscripted'
         )
+
 
 
 class TokenLoginSerializer(serializers.Serializer):

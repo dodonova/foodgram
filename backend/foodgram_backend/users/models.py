@@ -5,21 +5,24 @@ from foodgram_backend.settings import (
     NAME_MAX_LENGTH,
     USERNAME_MAX_LENTH,
     EMAIL_MAX_LENGTH,
-    PASSWORD_MAX_LENGTH
+    PASSWORD_MAX_LENGTH,
+    LANGUAGE_CODE
 )
+
+from foodgram_backend.translat_dict import get_name as _
 
 
 class User(AbstractUser):
     groups = models.ManyToManyField(
         'auth.Group',
         related_name='user_groups',
-        verbose_name='группы',
+        verbose_name=_('groups'),
         blank=True,
     )
     user_permissions = models.ManyToManyField(
         'auth.Permission',
         related_name='user_permissions',
-        verbose_name='разрешения пользователя',
+        verbose_name=_('user permissions'),
         blank=True,
         help_text='Specific permissions for this user.',
     )
@@ -33,13 +36,12 @@ class User(AbstractUser):
         unique=True,
         blank=False
     )
-
     subscriptions = models.ManyToManyField(
         'self',
         through='Subscription',
         symmetrical=False,
         related_name='followings',
-        verbose_name='подписки',
+        verbose_name=_('subscriptions'),
         blank=True
     )
     first_name = models.CharField(max_length=USERNAME_MAX_LENTH)
@@ -49,8 +51,8 @@ class User(AbstractUser):
     REQUIRED_FIELDS = ('username', 'password', 'first_name', 'last_name')
 
     class Meta:
-        verbose_name = 'пользователь'
-        verbose_name_plural = 'Пользователи'
+        verbose_name = _('user')
+        verbose_name_plural = _('Users')
 
     def __str__(self):
         return self.username
@@ -66,17 +68,17 @@ class User(AbstractUser):
 class Subscription(models.Model):
     follower = models.ForeignKey(
         User,
-        verbose_name='кто подписан',
+        verbose_name=_('follower'),
         related_name='following_set',
         on_delete=models.CASCADE
     )
     following = models.ForeignKey(
         User,
-        verbose_name='на кого подписан',
+        verbose_name=_('following'),
         related_name='followers_set',
         on_delete=models.CASCADE
     )
 
     class Meta:
-        verbose_name = 'подписка'
-        verbose_name_plural = 'Подписки'
+        verbose_name = _('subscription')
+        verbose_name_plural = _('Subscriptions')

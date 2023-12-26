@@ -1,6 +1,7 @@
 from rest_framework import mixins, status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 from users.models import Subscription, User
@@ -14,6 +15,7 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserWithSubscriptionSerializer
     permission_classes = [UsersAuthPermission]
+    pagination_class = PageNumberPagination
 
     def create(self, request, *args, **kwargs):
         self.serializer_class = UserCreateSerializer

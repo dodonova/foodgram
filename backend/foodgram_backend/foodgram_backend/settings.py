@@ -14,6 +14,9 @@ from pathlib import Path
 import os
 from datetime import timedelta
 
+from django.utils.translation import gettext_lazy as _
+
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -60,6 +63,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # 'django.middleware.locale.LocaleMiddleware',
 ]
 
 ROOT_URLCONF = 'foodgram_backend.urls'
@@ -127,7 +131,19 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+
+# LANGUAGES = [
+#     ('en-us', _('English')),
+#     ('ru', _('Russian')),
+# ]
+
+# LOCALE_PATHS = [
+#     os.path.join(BASE_DIR, 'recipes/translations')
+# ]
+
+
+LANGUAGE_CODE = 'ru'
+# LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
 
@@ -163,7 +179,10 @@ REST_FRAMEWORK = {
 
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
-    ]
+    ],
+    
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 3,
 }
 
 AUTH_USER_MODEL = 'users.User' 

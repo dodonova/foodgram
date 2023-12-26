@@ -21,3 +21,5 @@ services:
   backend:
     build: ../backend/
     env_file: ../.env
+
+

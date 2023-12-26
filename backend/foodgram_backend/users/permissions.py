@@ -43,3 +43,11 @@ class UsersAuthPermission(BasePermission):
             ]
             or request.user.is_authenticated
         )
+
+# class UsersAuthPermission(BasePermission):
+#     def has_permission(self, request, view):
+#         # Check if the user is authenticated
+#         if request.user and request.user.is_authenticated:
+#             # Check if the request has a valid token
+#             return request.auth and request.auth.is_valid(request.user)
+#         return False

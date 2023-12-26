@@ -1,24 +1,23 @@
+from django.core.validators import RegexValidator
 from django.db import models
 
+from foodgram_backend.settings import (DISPLAY_TEXT_MAX_LENGTH,
+                                       NAME_MAX_LENGTH, SLUG_MAX_LENGHT)
+from foodgram_backend.translat_dict import get_name as _
+from recipes.validators import (ColorValidator, validate_ingredients_amount,
+                                validate_portions)
 from users.models import User
-from foodgram_backend.settings import (
-    NAME_MAX_LENGTH,
-    SLUG_MAX_LENGHT,
-    DISPLAY_TEXT_MAX_LENGTH,
-)
-from recipes.validators import (
-    validate_portions,
-    validate_ingredients_amount
-)
+
+# from django.utils.translation import gettext_lazy as _
 
 
 class SlugNameModel(models.Model):
     name = models.CharField(
-        verbose_name='Название',
+        verbose_name=_('Name'),
         max_length=NAME_MAX_LENGTH,
     )
     slug = models.SlugField(
-        verbose_name='Слаг',
+        verbose_name=_('Slug'),
         unique=True,
         max_length=SLUG_MAX_LENGHT,
     )
@@ -32,34 +31,37 @@ class SlugNameModel(models.Model):
 
 
 class Tag(SlugNameModel):
-    color = models.SlugField(
-        verbose_name='Цвет',
+    color = models.CharField(
+        verbose_name=_('Color'),
+        max_length=16,
+        validators=[ColorValidator()]
     )
 
     class Meta(SlugNameModel.Meta):
-        verbose_name = 'тег',
-        verbose_name_plural = 'Теги'
+        verbose_name = _('tag')
+        verbose_name_plural = _('Tags')
 
 
 class MeasurementUnit(models.Model):
     name = models.CharField(
-        verbose_name='Название',
+        verbose_name=_('Name'),
         max_length=NAME_MAX_LENGTH,
         unique=True,
     )
 
     class Meta:
-        verbose_name = 'единица измерения',
-        verbose_name_plural = 'Единицы измерения'
+        verbose_name =  _('measurement unit'),
+        verbose_name_plural = _('Measurement Units')
 
     def __str__(self):
         return self.name[:DISPLAY_TEXT_MAX_LENGTH]
 
 
 class Ingredient(SlugNameModel):
-    default_measurement_unit = models.ForeignKey(
+    measurement_unit = models.ForeignKey(
         MeasurementUnit,
-        verbose_name='ед.измерения',
+        related_name='measurement_unit',
+        verbose_name=_('measurement unit'),
         blank=True,
         null=True,
         default=None,
@@ -67,47 +69,58 @@ class Ingredient(SlugNameModel):
     )
 
     class Meta(SlugNameModel.Meta):
-        verbose_name = 'ингредиент',
-        verbose_name_plural = 'Ингредиенты'
+        verbose_name = _('ingredient'),
+        verbose_name_plural = _('Ingredients')
 
 
 class Recipe(models.Model):
     name = models.CharField(
         max_length=NAME_MAX_LENGTH,
-        verbose_name='название'
+        verbose_name=_('name')
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        verbose_name='автор'
+        verbose_name=_('author'),
+        related_name='recipes'
+    )
+    tag = models.ManyToManyField(
+        Tag,
+        through='RecipeTag',
+        verbose_name=_('Tag'),
+    )
+    ingredient = models.ManyToManyField(
+        Ingredient,
+        through='RecipeIngredient',
+        verbose_name=_('Ingredient')
     )
     cooking_time = models.PositiveIntegerField(
-        verbose_name="Время приготовления, мин"
+        verbose_name=_('Cooking time')
     )
-    # image = models.ImageField(
-    #     upload_to='recipe_images/',
-    #     verbose_name='изображение',
-    #     null=True,
-    #     default=None,
-    # )
+    image = models.ImageField(
+        upload_to='recipe_images/',
+        verbose_name=_('image'),
+        null=True,
+        default=None,
+    )
     text = models.TextField(
-        verbose_name='Текст'
+        verbose_name=_('Text')
     )
     pub_date = models.DateTimeField(
-        verbose_name='дата публикации',
+        verbose_name=_('publication date'),
         auto_now_add=True,
         db_index=True
     )
     portions = models.PositiveIntegerField(
-        verbose_name='порции',
+        verbose_name=_('portions'),
         validators=[validate_portions],
         default=1,
         blank=True,
     )
 
     class Meta:
-        verbose_name = 'рецепт',
-        verbose_name_plural = 'Рецепты'
+        verbose_name = _('recipe'),
+        verbose_name_plural = _('Recipes')
 
     def __str__(self):
         return self.name[:DISPLAY_TEXT_MAX_LENGTH]
@@ -116,21 +129,21 @@ class Recipe(models.Model):
 class RecipeIngredient(models.Model):
     ingredient = models.ForeignKey(
         Ingredient,
-        verbose_name='ингредиент',
+        verbose_name=_('ingredient'),
         on_delete=models.CASCADE,
     )
     recipe = models.ForeignKey(
         Recipe,
-        verbose_name='рецепт',
+        verbose_name=_('recipe'),
         on_delete=models.CASCADE
     )
     amount = models.FloatField(
-        verbose_name='количество',
+        verbose_name=_('amount'),
         validators=[validate_ingredients_amount],
     )
     measurement_unit = models.ForeignKey(
         MeasurementUnit,
-        verbose_name='ед.измерения',
+        verbose_name=_('measurement unit'),
         on_delete=models.SET_DEFAULT,
         blank=True,
         null=True,
@@ -138,8 +151,11 @@ class RecipeIngredient(models.Model):
     )
 
     def save(self, *args, **kwargs):
-        if not self.measurement_unit and self.ingredient.default_measurement_unit:
-            self.measurement_unit = self.ingredient.default_measurement_unit
+        if (
+            not self.measurement_unit
+            and self.ingredient.measurement_unit
+        ):
+            self.measurement_unit = self.ingredient.measurement_unit
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -169,5 +185,22 @@ class Favorites(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = 'избранное',
-        verbose_name_plural = 'Избранные'
+        verbose_name = _('favorite'),
+        verbose_name_plural = _('Favorites')
+
+
+class ShoppingList(models.Model):
+    user = models.ForeignKey(
+        User,
+        verbose_name=_('user'),
+        on_delete=models.CASCADE
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        verbose_name=_('recipe'),
+        on_delete=models.CASCADE
+    )
+
+    class Meta:
+        verbose_name = _('shopping list'),
+        verbose_name_plural = _('Shopping Lists')
