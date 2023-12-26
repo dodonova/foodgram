@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework import status, viewsets
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
@@ -11,6 +13,8 @@ from recipes.serializers import (IngredientSerializer,
                                  MeasurementUnitSerializer, RecipeSerializer,
                                  TagSerializer)
 from users.permissions import IsAdminOrReadOnly
+
+logging.basicConfig(level=logging.INFO)
 
 
 class TagViewSet(viewsets.ModelViewSet):
@@ -32,6 +36,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
+    def retrieve(self, request, *args, **kwargs):
+        logging.warning(f"GET запрос recipes. {self.queryset}")
+        return super().retrieve(request, *args, **kwargs)
+
 
 class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
@@ -48,6 +56,8 @@ class IngredientViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save()
+
+
 
 
 class ImportIngredientsView(APIView):

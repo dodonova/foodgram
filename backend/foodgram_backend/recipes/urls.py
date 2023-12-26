@@ -21,6 +21,9 @@ router_v1.register('ingredients', IngredientViewSet, basename='ingredients')
 
 urlpatterns = [
     path('api/', include(router_v1.urls)),
-    path('api/import/ingredients/', ImportIngredientsView.as_view(), name='import-ingredients'),
+    path(
+        'api/import/ingredients/',
+        ImportIngredientsView.as_view(),
+        name='import-ingredients'),
 
 ]
