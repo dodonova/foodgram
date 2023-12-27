@@ -48,10 +48,10 @@ class RecipeAdmin(admin.ModelAdmin):
 
 class IngredientAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'name', 'slug', 'measurement_unit'
+        'name',  'measurement_unit'
     )
     list_editable = (
-        'name', 'slug', 'measurement_unit'
+        'measurement_unit',
     )
 
 

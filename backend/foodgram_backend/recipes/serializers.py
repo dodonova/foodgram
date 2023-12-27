@@ -5,7 +5,6 @@ from os import system
 
 from django.core.files.base import ContentFile
 from rest_framework import serializers
-from transliterate import slugify
 
 from recipes.models import (Ingredient, MeasurementUnit, Recipe,
                             RecipeIngredient, RecipeTag, Tag)
@@ -37,22 +36,19 @@ class IngredientSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Ingredient
-        fields = ('id', 'name', 'slug', 'measurement_unit')
-        read_only_fields = ('id', 'slug')
+        fields = ('id', 'name', 'measurement_unit')
+        read_only_fields = ('id',)
 
     def create(self, validated_data):
         name = validated_data.get('name')
-        slug = (slugify(name) if slugify(name) is not None
-                else name.replace(' ', '-'))
         measurement_unit_name = validated_data.get('measurement_unit')
         measurement_unit, status = MeasurementUnit.objects.get_or_create(
             name=measurement_unit_name)
         ingredient = Ingredient.objects.create(
             measurement_unit=measurement_unit,
-            name=name, slug=slug
+            name=name
         )
         return ingredient
-
 
 
 class Base64ImageField(serializers.ImageField):
@@ -66,11 +62,28 @@ class Base64ImageField(serializers.ImageField):
         return super().to_internal_value(data)
 
 
-class RecipeSerializer(serializers.ModelSerializer):
-    # ingredients = IngredientSerializer(many=True, read_only=True)
-    tags = TagSerializer(many=True, required=False)
+class RecipeTagSerializer(serializers.ModelSerializer):
 
-    # logging.info((f"Создан экземпляр сериализатора Recipe\n {tags}"))
+    class Meta:
+        model = RecipeTag
+        fields = ('recipe', 'tag')
+        read_only_fields = ('recipe', )
+
+
+# class RecipeIngredientSerializer(serializers.ModelSerializer):
+#     ingredient = serializers.CharField()
+
+#     class Meta:
+#         model = RecipeIngredient
+#         fields = ('recipe', 'ingredient', 'amount')
+#         read_only_fields = ('recipe', )
+
+
+class RecipeSerializer(serializers.ModelSerializer):
+    # ingredients = RecipeIngredientSerializer(many=True)
+    tags = RecipeTagSerializer(many=True, required=False)
+
+    logging.info((f"Создан экземпляр сериализатора Recipe\n {tags}"))
 
     image = Base64ImageField(required=False, allow_null=True)
     image_url = serializers.SerializerMethodField(
@@ -79,7 +92,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     )
     author = UserWithSubscriptionSerializer(read_only=True)
 
-    # logging.info((f"Создан экземпляр author\n {author}"))
+    logging.info((f"Создан экземпляр author\n {author}"))
     
     class Meta:
         model = Recipe
@@ -97,7 +110,6 @@ class RecipeSerializer(serializers.ModelSerializer):
             'cooking_time'
         )
         read_only_fields = ('author',)
-
 
     def get_image_url(self, obj):
         if obj.image:

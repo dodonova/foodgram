@@ -11,7 +11,7 @@ from users.models import User
 # from django.utils.translation import gettext_lazy as _
 
 
-class SlugNameModel(models.Model):
+class Tag(models.Model):
     name = models.CharField(
         verbose_name=_('Name'),
         max_length=NAME_MAX_LENGTH,
@@ -21,25 +21,19 @@ class SlugNameModel(models.Model):
         unique=True,
         max_length=SLUG_MAX_LENGHT,
     )
-
-    class Meta:
-        ordering = ('name', )
-        abstract = True
-
-    def __str__(self):
-        return self.name[:DISPLAY_TEXT_MAX_LENGTH]
-
-
-class Tag(SlugNameModel):
     color = models.CharField(
         verbose_name=_('Color'),
         max_length=16,
         validators=[ColorValidator()]
     )
 
-    class Meta(SlugNameModel.Meta):
+    class Meta:
         verbose_name = _('tag')
         verbose_name_plural = _('Tags')
+        ordering = ('name', )
+
+    def __str__(self):
+        return self.name[:DISPLAY_TEXT_MAX_LENGTH]
 
 
 class MeasurementUnit(models.Model):
@@ -57,7 +51,11 @@ class MeasurementUnit(models.Model):
         return self.name[:DISPLAY_TEXT_MAX_LENGTH]
 
 
-class Ingredient(SlugNameModel):
+class Ingredient(models.Model):
+    name = models.CharField(
+        verbose_name=_('Name'),
+        max_length=NAME_MAX_LENGTH,
+    )
     measurement_unit = models.ForeignKey(
         MeasurementUnit,
         related_name='measurement_unit',
@@ -68,9 +66,13 @@ class Ingredient(SlugNameModel):
         on_delete=models.SET_DEFAULT,
     )
 
-    class Meta(SlugNameModel.Meta):
+    class Meta:
         verbose_name = _('ingredient'),
         verbose_name_plural = _('Ingredients')
+        ordering = ('name', )
+
+    def __str__(self):
+        return self.name[:DISPLAY_TEXT_MAX_LENGTH]
 
 
 class Recipe(models.Model):
@@ -141,14 +143,14 @@ class RecipeIngredient(models.Model):
         verbose_name=_('amount'),
         validators=[validate_ingredients_amount],
     )
-    measurement_unit = models.ForeignKey(
-        MeasurementUnit,
-        verbose_name=_('measurement unit'),
-        on_delete=models.SET_DEFAULT,
-        blank=True,
-        null=True,
-        default=None
-    )
+    # measurement_unit = models.ForeignKey(
+    #     MeasurementUnit,
+    #     verbose_name=_('measurement unit'),
+    #     on_delete=models.SET_DEFAULT,
+    #     blank=True,
+    #     null=True,
+    #     default=None
+    # )
 
     def save(self, *args, **kwargs):
         if (

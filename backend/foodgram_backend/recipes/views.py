@@ -3,7 +3,6 @@ import logging
 from rest_framework import status, viewsets
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
-from transliterate import slugify
 from rest_framework.views import APIView
 
 # from recipes.serializers import IngredientImportSerializer
@@ -37,7 +36,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user)
 
     def retrieve(self, request, *args, **kwargs):
-        logging.warning(f"GET запрос recipes. {self.queryset}")
+        logging.warning(f"GET запрос recipes.")
         return super().retrieve(request, *args, **kwargs)
 
 
@@ -79,7 +78,6 @@ class ImportIngredientsView(APIView):
             
                 Ingredient.objects.get_or_create(
                     name=ingredient_name,
-                    slug=slugify(ingredient_name),
                     measurement_unit=measurement_unit
                 )
                 new_ids.append(Ingredient.objects.get(name=ingredient_name).id)
