@@ -20,7 +20,15 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         self.serializer_class = UserCreateSerializer
-        return super().create(request, *args, **kwargs)
+
+        response = super().create(request, *args, **kwargs)
+
+        # Выводим информацию о созданном пользователе
+        created_user_data = response.data
+        print(f"User created: {created_user_data}")
+
+        return response
+        # return super().create(request, *args, **kwargs)
 
     @action(detail=False, methods=['post'])
     def token_login(self, request):
@@ -28,7 +36,12 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         user = User.objects.get(email=serializer.validated_data['email'])
         token, _ = Token.objects.get_or_create(user=user)
-        return Response({'token': token.key}, status=status.HTTP_200_OK)
+        return Response(
+            {'token': token.key},
+            status=status.HTTP_200_OK,
+            headers={'Authorization': f'Token {token.key}'}
+        )
+        # return Response({'token': token.key}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'], url_path='token/logout')
     def token_logout(self, request):

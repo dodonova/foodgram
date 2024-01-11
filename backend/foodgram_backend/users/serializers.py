@@ -18,6 +18,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
         required=True, max_length=USERNAME_MAX_LENTH)
     last_name = serializers.CharField(
         required=True, max_length=USERNAME_MAX_LENTH)
+    password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
@@ -34,6 +35,11 @@ class UserCreateSerializer(serializers.ModelSerializer):
                 'Username "me" is not allowed.'
             )
         return value
+
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        user = User.objects.create_user(password=password, **validated_data)
+        return user
 
 
 class UserWithSubscriptionSerializer(serializers.ModelSerializer):
