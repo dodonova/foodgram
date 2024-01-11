@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 
 from recipes.models import Ingredient, MeasurementUnit, Recipe, Tag
 from recipes.serializers import (IngredientSerializer,
-                                 MeasurementUnitSerializer, RecipeSerializer,
+                                 MeasurementUnitSerializer, RecipeGETSerializer,
                                  TagSerializer)
 from users.permissions import IsAdminOrReadOnly
 
@@ -20,6 +20,7 @@ class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     permission_classes = (IsAdminOrReadOnly, )
+    pagination_class = None
 
 
 class MeasurementUnitViewSet(viewsets.ModelViewSet):
@@ -28,22 +29,24 @@ class MeasurementUnitViewSet(viewsets.ModelViewSet):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
+    http_method_names = ['get']
     queryset = Recipe.objects.all()
-    serializer_class = RecipeSerializer
+    serializer_class = RecipeGETSerializer
     pagination_class = PageNumberPagination
 
-    def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+    # def perform_create(self, serializer):
+    #     serializer.save(author=self.request.user)
 
-    def retrieve(self, request, *args, **kwargs):
-        logging.warning(f"GET запрос recipes.")
-        return super().retrieve(request, *args, **kwargs)
+    # def retrieve(self, request, *args, **kwargs):
+    #     logging.warning(f"GET запрос recipes.")
+    #     return super().retrieve(request, *args, **kwargs)
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     permission_classes = (IsAdminOrReadOnly, )
+    pagination_class = None
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

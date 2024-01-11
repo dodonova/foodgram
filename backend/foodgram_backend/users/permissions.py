@@ -39,7 +39,9 @@ class UsersAuthPermission(BasePermission):
             view.action in [
                 'create',
                 'token_login',
-                'token_login_with_token'
+                'list',
+                'retrieve'
+                # 'token_login_with_token'
             ]
             or request.user.is_authenticated
         )

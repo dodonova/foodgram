@@ -16,11 +16,11 @@ from recipes.models import (
 
 
 class IngredientInline(admin.TabularInline):
-    model = Recipe.ingredient.through
+    model = Recipe.ingredients.through
 
 
 class TagInline(admin.TabularInline):
-    model = Recipe.tag.through
+    model = Recipe.tags.through
 
 
 class RecipeAdmin(admin.ModelAdmin):
@@ -33,16 +33,16 @@ class RecipeAdmin(admin.ModelAdmin):
     list_editable = (
         'cooking_time', 'image',     'portions'
     )
-    list_filter = ('tag', )
+    list_filter = ('tags', )
 
     inlines = (IngredientInline, TagInline)
 
     def ingredients_list(self, obj):
-        return ", ".join([ingredient.name for ingredient in obj.ingredient.all()])
+        return ", ".join([ingredient.name for ingredient in obj.ingredients.all()])
     ingredients_list.short_description = ("Ingredients")
 
     def tags_list(self, obj):
-        return ", ".join([tag.name for tag in obj.tag.all()])
+        return ", ".join([tag.name for tag in obj.tags.all()])
     tags_list.short_description = ("Tags")
 
 

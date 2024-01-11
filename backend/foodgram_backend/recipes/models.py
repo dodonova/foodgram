@@ -86,12 +86,13 @@ class Recipe(models.Model):
         verbose_name=_('author'),
         related_name='recipes'
     )
-    tag = models.ManyToManyField(
+    tags = models.ManyToManyField(
         Tag,
         through='RecipeTag',
         verbose_name=_('Tag'),
+        related_name='tags'
     )
-    ingredient = models.ManyToManyField(
+    ingredients = models.ManyToManyField(
         Ingredient,
         through='RecipeIngredient',
         verbose_name=_('Ingredient')
@@ -143,14 +144,15 @@ class RecipeIngredient(models.Model):
         verbose_name=_('amount'),
         validators=[validate_ingredients_amount],
     )
-    # measurement_unit = models.ForeignKey(
-    #     MeasurementUnit,
-    #     verbose_name=_('measurement unit'),
-    #     on_delete=models.SET_DEFAULT,
-    #     blank=True,
-    #     null=True,
-    #     default=None
-    # )
+    measurement_unit = models.ForeignKey(
+        MeasurementUnit,
+        verbose_name=_('measurement unit'),
+        related_name='recipe_ingredients',
+        on_delete=models.SET_DEFAULT,
+        blank=True,
+        null=True,
+        default=None
+    )
 
     def save(self, *args, **kwargs):
         if (

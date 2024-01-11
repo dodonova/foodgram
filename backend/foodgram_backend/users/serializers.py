@@ -37,9 +37,9 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
 
 class UserWithSubscriptionSerializer(serializers.ModelSerializer):
-    is_subscripted = serializers.SerializerMethodField()
+    is_subscribed = serializers.SerializerMethodField()
 
-    def get_is_subscripted(self, obj):
+    def get_is_subscribed(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             return obj.followers_set.filter(follower=request.user).exists()
@@ -48,8 +48,8 @@ class UserWithSubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-            'id', 'email', 'username', 'first_name',
-            'last_name', 'is_subscripted'
+            'id', 'username', 'first_name', 'last_name',
+            'email', 'is_subscribed'
         )
 
 

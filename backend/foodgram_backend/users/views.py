@@ -16,6 +16,7 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserWithSubscriptionSerializer
     permission_classes = [UsersAuthPermission]
     pagination_class = PageNumberPagination
+    page_size = 3
 
     def create(self, request, *args, **kwargs):
         self.serializer_class = UserCreateSerializer
