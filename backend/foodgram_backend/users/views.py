@@ -1,7 +1,10 @@
+from django.db import IntegrityError
 from rest_framework import mixins, status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
-from rest_framework.pagination import PageNumberPagination
+from rest_framework.pagination import (
+    PageNumberPagination,
+    LimitOffsetPagination)
 from rest_framework.response import Response
 
 from users.models import Subscription, User
@@ -15,33 +18,48 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserWithSubscriptionSerializer
     permission_classes = [UsersAuthPermission]
-    pagination_class = PageNumberPagination
-    page_size = 3
+    pagination_class = LimitOffsetPagination
+    # page_size = 3
 
     def create(self, request, *args, **kwargs):
         self.serializer_class = UserCreateSerializer
 
-        response = super().create(request, *args, **kwargs)
+        try:
+            response = super().create(request, *args, **kwargs)
+            # Выводим информацию о созданном пользователе
+            # created_user_data = response.data
+            # print(f"User created: {created_user_data}")
+            return response
+            # return super().create(request, *args, **kwargs)
 
-        # Выводим информацию о созданном пользователе
-        created_user_data = response.data
-        print(f"User created: {created_user_data}")
+        except IntegrityError as e:
+            error_message = str(e)
+            if 'unique constraint' in error_message.lower():
+                return Response(
+                    {'detail':
+                        'User with this username or email already exists.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            else:
+                return Response(
+                    {'detail':
+                        'An error occurred while processing your request.'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
 
-        return response
-        # return super().create(request, *args, **kwargs)
 
-    @action(detail=False, methods=['post'])
     def token_login(self, request):
         serializer = TokenLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = User.objects.get(email=serializer.validated_data['email'])
         token, _ = Token.objects.get_or_create(user=user)
-        return Response(
-            {'token': token.key},
-            status=status.HTTP_200_OK,
-            headers={'Authorization': f'Token {token.key}'}
-        )
-        # return Response({'token': token.key}, status=status.HTTP_200_OK)
+
+        # Set the token in the response header
+        response = Response({'auth_token': token.key}, status=status.HTTP_200_OK)
+        response['Authorization'] = f'Token {token.key}'
+
+        return response
+
 
     @action(detail=False, methods=['post'], url_path='token/logout')
     def token_logout(self, request):
