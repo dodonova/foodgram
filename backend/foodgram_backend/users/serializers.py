@@ -1,3 +1,4 @@
+import re
 from rest_framework import serializers
 
 from users.models import User
@@ -42,11 +43,12 @@ class UserCreateSerializer(serializers.ModelSerializer):
         return user
 
 
-class UserWithSubscriptionSerializer(serializers.ModelSerializer):
+class UserGETSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
+        # user = self.context.get('request').user
         if request and request.user.is_authenticated:
             return obj.followers_set.filter(follower=request.user).exists()
         return False
@@ -57,7 +59,6 @@ class UserWithSubscriptionSerializer(serializers.ModelSerializer):
             'id', 'username', 'first_name', 'last_name',
             'email', 'is_subscribed'
         )
-
 
 
 class TokenLoginSerializer(serializers.Serializer):

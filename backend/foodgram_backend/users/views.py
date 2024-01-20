@@ -11,12 +11,12 @@ from users.models import Subscription, User
 from users.permissions import UsersAuthPermission
 from users.serializers import (TokenLoginSerializer,  # UserSerializer,
                                TokenLogoutSerializer, UserCreateSerializer,
-                               UserWithSubscriptionSerializer)
+                               UserGETSerializer)
 
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
-    serializer_class = UserWithSubscriptionSerializer
+    serializer_class = UserGETSerializer
     permission_classes = [UsersAuthPermission]
     pagination_class = LimitOffsetPagination
     # page_size = 3
@@ -70,7 +70,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get', 'patch'])
     def me(self, request):
-        serializer = UserWithSubscriptionSerializer(
+        serializer = UserGETSerializer(
             request.user,
             data=request.data,
             partial=True)
@@ -114,7 +114,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class UserSubscriptionsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
-    serializer_class = UserWithSubscriptionSerializer
+    serializer_class = UserGETSerializer
     permission_classes = [UsersAuthPermission]
 
     def get_queryset(self):

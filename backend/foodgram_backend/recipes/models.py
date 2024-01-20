@@ -90,12 +90,12 @@ class Recipe(models.Model):
         Tag,
         through='RecipeTag',
         verbose_name=_('Tag'),
-        related_name='tags'
+        related_name='tags',
     )
     ingredients = models.ManyToManyField(
         Ingredient,
         through='RecipeIngredient',
-        verbose_name=_('Ingredient')
+        verbose_name=_('Ingredient'),
     )
     cooking_time = models.PositiveIntegerField(
         verbose_name=_('Cooking time')
@@ -157,7 +157,7 @@ class RecipeIngredient(models.Model):
     def save(self, *args, **kwargs):
         if (
             not self.measurement_unit
-            and self.ingredient.measurement_unit
+            # and self.ingredient.measurement_unit
         ):
             self.measurement_unit = self.ingredient.measurement_unit
         super().save(*args, **kwargs)
@@ -175,6 +175,9 @@ class RecipeTag(models.Model):
         Tag,
         on_delete=models.CASCADE
     )
+
+    def __str__(self):
+        return f'{self.recipe} {self.tag}'[:DISPLAY_TEXT_MAX_LENGTH]
 
 
 class Favorites(models.Model):

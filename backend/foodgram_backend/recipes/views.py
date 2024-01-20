@@ -1,7 +1,7 @@
 import logging
 
 from rest_framework import status, viewsets
-from rest_framework.pagination import PageNumberPagination
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -9,17 +9,18 @@ from rest_framework.views import APIView
 
 from recipes.models import Ingredient, MeasurementUnit, Recipe, Tag
 from recipes.serializers import (IngredientSerializer,
-                                 MeasurementUnitSerializer, RecipeGETSerializer,
+                                 MeasurementUnitSerializer,
+                                 RecipeGETSerializer,
+                                 RecipeCreateSerilalizer,
                                  TagSerializer)
 from users.permissions import IsAdminOrReadOnly
 
 logging.basicConfig(level=logging.INFO)
 
 
-class TagViewSet(viewsets.ModelViewSet):
+class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    permission_classes = (IsAdminOrReadOnly, )
     pagination_class = None
 
 
@@ -29,43 +30,48 @@ class MeasurementUnitViewSet(viewsets.ModelViewSet):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    http_method_names = ['get']
+    # http_method_names = ['get']
     queryset = Recipe.objects.all()
-    serializer_class = RecipeGETSerializer
-    pagination_class = PageNumberPagination
+    # serializer_class = RecipeGETSerializer
+    pagination_class = LimitOffsetPagination
 
-    # def perform_create(self, serializer):
-    #     serializer.save(author=self.request.user)
+    def get_serializer_class(self):
+        if self.action in ('list', 'retireve'):
+            return RecipeGETSerializer
+        elif self.action in ('create', 'update'):
+            return RecipeCreateSerilalizer
+
+    def perform_create(self, serializer):
+        # serializer_class = RecipeCreateSerilalizer
+        serializer.save(author=self.request.user)
 
     # def retrieve(self, request, *args, **kwargs):
     #     logging.warning(f"GET запрос recipes.")
     #     return super().retrieve(request, *args, **kwargs)
 
 
-class IngredientViewSet(viewsets.ModelViewSet):
+class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    permission_classes = (IsAdminOrReadOnly, )
+    # permission_classes = (IsAdminOrReadOnly, )
     pagination_class = None
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(
-            serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    # def create(self, request, *args, **kwargs):
+    #     serializer = self.get_serializer(data=request.data)
+    #     serializer.is_valid(raise_exception=True)
+    #     self.perform_create(serializer)
+    #     headers = self.get_success_headers(serializer.data)
+    #     return Response(
+    #         serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-    def perform_create(self, serializer):
-        serializer.save()
-
-
+    # def perform_create(self, serializer):
+    #     serializer.save()
 
 
 class ImportIngredientsView(APIView):
     serializer_class = IngredientSerializer(many=True)
     permission_classes = (IsAdminOrReadOnly, )
-    
+
     def post(self, request, *args, **kwargs):
         data = request.data.get('data')
         serializer = IngredientSerializer(data=data, many=True)

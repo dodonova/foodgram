@@ -1,3 +1,4 @@
+from re import A
 from django.contrib import admin
 
 from recipes.models import (
@@ -46,6 +47,11 @@ class RecipeAdmin(admin.ModelAdmin):
     tags_list.short_description = ("Tags")
 
 
+class FavoritesAdmin(admin.ModelAdmin):
+    list_display = ('user', 'recipe')
+    list_filter = ('user', 'recipe')
+
+
 class IngredientAdmin(admin.ModelAdmin):
     list_display = (
         'name',  'measurement_unit'
@@ -73,4 +79,5 @@ admin.site.register(MeasurementUnit, MeasurementUnitAdmin)
 admin.site.register(Ingredient, IngredientAdmin)
 # admin.site.register(RecipeIngredient)
 # admin.site.register(RecipeTag)
-admin.site.register(Favorites)
+admin.site.register(Favorites, FavoritesAdmin)
+
