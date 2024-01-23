@@ -1,6 +1,6 @@
 from recipes.models import Recipe, RecipeIngredient, Ingredient, Tag, MeasurementUnit, RecipeTag
 from users.models import User
-from recipes.serializers import RecipeGETSerializer, RecipeCreateSerilalizer, RecipeIngredientSerializer
+from recipes.serializers import RecipeGETSerializer, RecipeCreateSerilalizer, RecipeIngredientGETSerializer
 
 user = User(username='123', email='123@mail.fake', first_name='First', last_name='Last', password='12345', id=1)
 units = MeasurementUnit(id=1, name='kg')

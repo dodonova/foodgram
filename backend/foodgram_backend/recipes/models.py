@@ -81,21 +81,16 @@ class Recipe(models.Model):
         verbose_name=_('name')
     )
     author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name=_('author'),
-        related_name='recipes'
+        User, on_delete=models.CASCADE,
+        verbose_name=_('author'), related_name='recipes'
     )
     tags = models.ManyToManyField(
-        Tag,
-        through='RecipeTag',
-        verbose_name=_('Tag'),
-        related_name='tags',
+        Tag, through='RecipeTag',
+        verbose_name=_('Tag'), related_name='tags'
     )
     ingredients = models.ManyToManyField(
-        Ingredient,
-        through='RecipeIngredient',
-        verbose_name=_('Ingredient'),
+        Ingredient, through='RecipeIngredient',
+        verbose_name=_('Ingredient')
     )
     cooking_time = models.PositiveIntegerField(
         verbose_name=_('Cooking time')
@@ -103,22 +98,19 @@ class Recipe(models.Model):
     image = models.ImageField(
         upload_to='recipe_images/',
         verbose_name=_('image'),
-        null=True,
-        default=None,
+        null=True, default=None,
     )
     text = models.TextField(
         verbose_name=_('Text')
     )
     pub_date = models.DateTimeField(
         verbose_name=_('publication date'),
-        auto_now_add=True,
-        db_index=True
+        auto_now_add=True, db_index=True
     )
     portions = models.PositiveIntegerField(
-        verbose_name=_('portions'),
+        verbose_name=_('portions'), 
         validators=[validate_portions],
-        default=1,
-        blank=True,
+        default=1, blank=True,
     )
 
     class Meta:

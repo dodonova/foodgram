@@ -1,9 +1,12 @@
 import logging
 
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
+from rest_framework import filters
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
 
 # from recipes.serializers import IngredientImportSerializer
 
@@ -13,6 +16,7 @@ from recipes.serializers import (IngredientSerializer,
                                  RecipeGETSerializer,
                                  RecipeCreateSerilalizer,
                                  TagSerializer)
+from recipes.filters import IngredientFilterSet, RecipeFilterSet
 from users.permissions import IsAdminOrReadOnly
 
 logging.basicConfig(level=logging.INFO)
@@ -34,6 +38,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     # serializer_class = RecipeGETSerializer
     pagination_class = LimitOffsetPagination
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = RecipeFilterSet
 
     def get_serializer_class(self):
         if self.action in ('list', 'retireve'):
@@ -55,6 +61,11 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = IngredientSerializer
     # permission_classes = (IsAdminOrReadOnly, )
     pagination_class = None
+    filter_backends = (DjangoFilterBackend, )
+    filterset_class = IngredientFilterSet
+
+
+
 
     # def create(self, request, *args, **kwargs):
     #     serializer = self.get_serializer(data=request.data)
