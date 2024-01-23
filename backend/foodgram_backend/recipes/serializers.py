@@ -47,50 +47,64 @@ class IngredientSerializer(serializers.ModelSerializer):
         read_only_fields = ('id',)
 
 
+class CustomIngredientSerializer(serializers.RelatedField):
+    def to_internal_value(self, data):
+        # logger.info(f'~~~~~ CustomIngredientSerializer to_internal_value: {data}, self: \n{self}\n')
+        ingredient_id = data.get('id')
+        ingredient = Ingredient.objects.get(pk=ingredient_id)
+        # logger.info(f'~~~~~ CustomIngredientSerializer ingredient: {ingredient}\n')
+        amount = data.get('amount')
+        return {'ingredient': ingredient, 'amount': amount}
+
+    def to_representation(self, value, obj):
+        logger.info((f'~~~ CustomIngredientSerializer to_representation value:'
+                     f'{type(value)}'
+                     f'\n{value.id}, {value.name}, {value.measurement_unit}\n'))
+        # logger.info(f'~~~~~ CustomIngredientSerializer  to_representation data: \n{data}\n')
+        return {
+            'id': value.id,
+            'name': value.name,
+            'measurement_unit': str(value.measurement_unit),
+            'amount': 10
+        }
+
+
+class CustomTagSerializer(serializers.PrimaryKeyRelatedField):
+    def to_representation(self, value):
+        return {
+            'id': value.id,
+            'name': value.name,
+            'slug': value.slug,
+            'color': value.color
+        }
+
+
 class RecipeIngredientGETSerializer(serializers.Serializer):
     id = serializers.IntegerField(source='ingredient__id')
     name = serializers.CharField(source='ingredient__name', required=False)
     amount = serializers.FloatField()
     measurement_unit = serializers.CharField(
         source='measurement_unit__name', required=False)
-    
-    # class Meta:
-    #     model = Ingredient
-    #     fields = ('id', 'name', 'measurement_unit', 'amount')   
-    #     read_only_fealds = ('name', 'measurement_unit') 
 
 
-class RecipeIngredientCreateSerializer(serializers.Serializer):
-    id = serializers.IntegerField()
-    amount = serializers.FloatField()
-    
-    # measurement_unit = serializers.CharField()
-    # amount = None
+class AmountRelatedField(serializers.RelatedField):
+    def to_representation(self, value):
+        logger.info(f'~~~~~ AmountRelatedField to_representation value: {value.id, type(value)}')
+        data = IngredientSerializer(value).data
+        data['amount'] = 0
+        return data
 
-    # def __init__(self, instance=None, data=None, **kwargs):
-    #     super(RecipeIngredientSerializer, self).__init__()
-    #     # logger.info(f'RecipeIngredient DATA: {self.data}')
-
-    # def to_representation(self, instance):
-    #     # logger.info(f'RecipeIngredient INSTANCE: {instance}')
-    #     # logger.info(f'RecipeIngredient CONTEXT: {self.context}')
-    #     # logger.info(f'RecipeIngredient FIELDS: {self.fields}')
-
-    #     if 'recipe' in self.context:
-    #         recipe_id = self.context.get('recipe')
-    #         recipe = Recipe.objects.get(pk=recipe_id)
-    #         obj = RecipeIngredient.objects.filter(
-    #             recipe=recipe, ingredient=instance
-    #         ).first()
-    #         logger.info(f'RecipeIngredient obj.data: {obj.amount}')
-    #         self.fields['amount'] = AmountSerializer(obj)
-
-    #     return super(RecipeIngredientSerializer, self).to_representation(instance)
+    def to_internal_value(self, data):
+        return data
 
 
 class RecipeSerializer(serializers.ModelSerializer):
-    ingredients = serializers.SerializerMethodField()
-    tags = TagSerializer(many=True)
+    # ingredients = serializers.SerializerMethodField()
+    ingredients = CustomIngredientSerializer(
+        many=True,
+        queryset=RecipeIngredient.objects.select_related('ingredient')
+    )
+    tags = CustomTagSerializer(many=True, queryset=Tag.objects.all())
 
     image = Base64ImageField(required=False, allow_null=True)
     author = UserGETSerializer(read_only=True)
@@ -136,109 +150,73 @@ class RecipeSerializer(serializers.ModelSerializer):
                 )
         return RecipeIngredientGETSerializer(ingredients, many=True).data
 
-
-class RecipeGETSerializer(RecipeSerializer):
-    pass
-
-
-class AmountRelatedField(serializers.RelatedField):
-    def to_representation(self, value):
-        logger.info(f'AmountRelatedField to_representation value: {value.id, type(value)}')
-        data = IngredientSerializer(value).data
-        data['amount'] = 0
-        return data
-    
     def to_internal_value(self, data):
-        # logger.info(f'to_internal_value: {data}, self: {self}')
-        # recipe_ingredient = RecipeIngredient.objects.get(pk=instance.id)
-            # RecipeIngredient.objects.create(
-            #     recipe=recipe,
-            #     ingredient=ingredient,
-            #     amount=ingredient['amount'],
-            # )
-        # return recipe
-        return data
-
-
-class RecipeCreateSerilalizer(RecipeSerializer):
-    # tags = serializers.ListField(child=serializers.IntegerField())
-    ingredients = AmountRelatedField(many=True, queryset=RecipeIngredient.objects.all())
-    tags = serializers.PrimaryKeyRelatedField(many=True, queryset=Tag.objects.all())
+        # logger.info(f'~~~~~ RecipeSerializer to_internal_value: {data}, self: \n{self}\n')
+        return super(RecipeSerializer, self).to_internal_value(data)
 
     def create(self, validated_data):
-        tags_data = validated_data.pop('tags', [])  
+        tags_data = validated_data.pop('tags', [])
+        
         ingredients_data = validated_data.pop('ingredients', []) 
 
         recipe = Recipe.objects.create(**validated_data)
 
         recipe.tags.set(tags_data)
 
-        # logger.info(f'ingredient data: {ingredients_data}')
+        # for tag_id in tags_data:
 
-        for ingredient in ingredients_data:
-            # logger.info(f'RecipeCreateSerilalizer: {self}')            
-            RecipeIngredient.objects.create(
-                recipe=recipe,
-                ingredient=Ingredient.objects.get(pk=ingredient['id']),
-                amount=ingredient['amount'],
+        logger.info(f'~~~~~ ingredients data: \n{ingredients_data}\n')
+
+        recipe_ingredients = []
+
+        for ingredient_data in ingredients_data:
+            ingredient = ingredient_data['ingredient']
+            amount = ingredient_data['amount']
+            # Создаем или обновляем объект RecipeTag
+            recipe_ingredient = RecipeIngredient.objects.create(
+                recipe=recipe, ingredient=ingredient, amount=amount
             )
+            # recipe_ingredient.save()
+            recipe_ingredients.append(recipe_ingredient)
         return recipe
 
+    
+
+# class RecipeGETSerializer(RecipeSerializer):
+#     pass
 
 
-    # def create(self, validated_data):
-    #     ingredients = validated_data.pop('ingredients')
-    #     tags = validated_data.pop('tags')
-    #     recipe = Recipe.objects.create(**validated_data)
+# class RecipeCreateSerilalizer(RecipeSerializer):
+#     tags = serializers.PrimaryKeyRelatedField(many=True, queryset=Tag.objects.all())
+#     ingredients = CustomIngredientSerializer(
+#         many=True,
+#         queryset=RecipeIngredient.objects.select_related('ingredient')
+#     )
 
-    #     logger.info(f'RecipeCreate INGREDIENTS: {ingredients}')
- 
-    #     for ingredient_data in ingredients:
-    #         ingredient = Ingredient.objects.get(id=ingredient_data['id'])
-    #         amount = ingredient_data['amount']
-    #         RecipeIngredient.objects.create(
-    #             recipe=recipe,
-    #             ingredient=ingredient,
-    #             amount=amount,
-    #         )
-    #     logger.info(f'TAGS: {tags} |  {type(tags)}')
-    #     for tag_id in tags:
-    #         logger.info(f'TAG_ID: {tag_id} | {type(tag_id)}')
-    #         # tag_id = tag_id['tag']
-    #         tag = Tag.objects.get(id=tag_id)
-    #         RecipeTag.objects.create(recipe=recipe, tag=tag)
+#     def create(self, validated_data):
+#         tags_data = validated_data.pop('tags', [])  
+#         ingredients_data = validated_data.pop('ingredients', []) 
 
-    #     logger.info(f'Recipe: {type(recipe)}\n{recipe}')
-    #     # logger.info(f'Recipe ingredients: {recipe.name}')
+#         recipe = Recipe.objects.create(**validated_data)
 
-    #     return recipe
+#         recipe.tags.set(tags_data)
 
+#         logger.info(f'~~~~~ ingredients data: \n{ingredients_data}\n')
 
+#         recipe_ingredients = []
 
-    # def create(self, validated_data):
-        # ingredients = None
-        # tags = None
+#         for ingredient_data in ingredients_data:
+#             ingredient = ingredient_data['ingredient']
+#             amount = ingredient_data['amount']
+#             # Создаем или обновляем объект RecipeTag
+#             recipe_ingredient = RecipeIngredient.objects.create(
+#                 recipe=recipe, ingredient=ingredient, amount=amount
+#             )
+#             # recipe_ingredient.save()
+#             recipe_ingredients.append(recipe_ingredient)
+#         return recipe
 
-        # if 'ingredients' in self.initial_data:
-        #     ingredients = validated_data.pop('ingredients')
-
-        # if 'tags' in self.initial_data:
-        #     tags = validated_data.pop('tags')
-
-        # recipe = Recipe.objects.create(**validated_data)
-
-        # if ingredients:
-        #     for ingredient in ingredients:
-        #         current_ingredient, status = Ingredient.objects.get_or_create(
-        #             **ingredient)
-        #         RecipeIngredient.objects.create(
-        #             ingredient=current_ingredient, recipe=recipe)
-
-        # if 'tags' in self.initial_data:
-        #     for tag_id in tags:
-        #         current_tag = Tag.objects.filter(pk=tag_id).first()
-        #         if current_tag:
-        #             RecipeTag.objects.create(recipe=recipe, tag=current_tag)
-
-        # logger.info(f'\n\n\n\nDONE')
-        # return recipe
+#     def to_representation(self, value):
+#         logger.info(f'~~~~~ RecipeCreateSerilalizer  to_representation value: \n{type(value)} \n{value}\n{value.tags}')
+        
+#         return super(RecipeCreateSerilalizer, self).to_representation(value)

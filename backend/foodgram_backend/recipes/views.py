@@ -13,8 +13,8 @@ from rest_framework.views import APIView
 from recipes.models import Ingredient, MeasurementUnit, Recipe, Tag
 from recipes.serializers import (IngredientSerializer,
                                  MeasurementUnitSerializer,
-                                 RecipeGETSerializer,
-                                 RecipeCreateSerilalizer,
+                                 RecipeSerializer,
+                                #  RecipeCreateSerilalizer,
                                  TagSerializer)
 from recipes.filters import IngredientFilterSet, RecipeFilterSet
 from users.permissions import IsAdminOrReadOnly
@@ -36,16 +36,16 @@ class MeasurementUnitViewSet(viewsets.ModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     # http_method_names = ['get']
     queryset = Recipe.objects.all()
-    # serializer_class = RecipeGETSerializer
+    serializer_class = RecipeSerializer
     pagination_class = LimitOffsetPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilterSet
 
-    def get_serializer_class(self):
-        if self.action in ('list', 'retireve'):
-            return RecipeGETSerializer
-        elif self.action in ('create', 'update'):
-            return RecipeCreateSerilalizer
+    # def get_serializer_class(self):
+    #     if self.action in ('list', 'retireve'):
+    #         return RecipeGETSerializer
+    #     elif self.action in ('create', 'update'):
+    #         return RecipeCreateSerilalizer
 
     def perform_create(self, serializer):
         # serializer_class = RecipeCreateSerilalizer
