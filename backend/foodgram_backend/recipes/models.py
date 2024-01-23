@@ -125,11 +125,13 @@ class RecipeIngredient(models.Model):
     ingredient = models.ForeignKey(
         Ingredient,
         verbose_name=_('ingredient'),
+        # related_name='ingredients'
         on_delete=models.CASCADE,
     )
     recipe = models.ForeignKey(
         Recipe,
         verbose_name=_('recipe'),
+        related_name='recipe_ingredients',
         on_delete=models.CASCADE
     )
     amount = models.FloatField(
