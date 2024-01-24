@@ -48,15 +48,20 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeIngredientSerializer(serializers.RelatedField):
-    def to_internal_value(self, data, recipe_id=1):
+    def to_internal_value(self, data):
+        logger.info(f'~~~~ START RecipeIngredientSerializer.to_internal_value()\n')
+        obj = self.queryset.first()
+        logger.info(f'~~~~~ QUERYSET: {type(self)} {self}\n')
         ingredient = Ingredient.objects.get(pk=data.get('id'))
-        recipe = Recipe.objects.get(pk=recipe_id)
+        recipe = obj.recipe
+        logger.info(f'~~~~~ CURRENT RECIPE: {type(recipe)} {recipe} \n  ')
         obj = RecipeIngredient.objects.create(
             recipe=recipe, ingredient=ingredient, amount=data.get('amount')
         )
         obj.save()
+        logger.info(f'~~~~~ RETURNING OBJ: {type(obj)} {obj} \n\n  ')
         return obj
-    
+
     def to_representation(self, value):
         return {
             'id': value.ingredient.id,
@@ -121,9 +126,22 @@ class RecipeSerializer(serializers.ModelSerializer):
         return False
 
     def create(self, validated_data):
+        logger.info('~~~~ START RecipeSerializer.create()')
         tags_data = validated_data.pop('tags', [])
         recipe_ingredients_data = validated_data.pop('recipe_ingredients', [])
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags_data)
         recipe.recipe_ingredients.set(recipe_ingredients_data)
         return recipe
+
+    def to_internal_value(self, data):
+        logger.info('~~~~ START RecipeSerializer.to_internal_value()')
+        ret = super().to_internal_value(data)
+        logger.info(f'~~~~ VALIDATED_DATA: {ret}')
+        return ret
+
+    def to_representation(self, value):
+        logger.info('\n~~~~ START RecipeSerializer.to_representation()')
+        ret = super().to_representation(value)
+        logger.info(f'~~~~ RETURN: {ret}')
+        return ret

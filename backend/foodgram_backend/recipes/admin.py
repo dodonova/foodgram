@@ -77,7 +77,7 @@ admin.site.register(Recipe, RecipeAdmin)
 admin.site.register(Tag, TagAdmin)
 admin.site.register(MeasurementUnit, MeasurementUnitAdmin)
 admin.site.register(Ingredient, IngredientAdmin)
-# admin.site.register(RecipeIngredient)
+admin.site.register(RecipeIngredient)
 # admin.site.register(RecipeTag)
 admin.site.register(Favorites, FavoritesAdmin)
 
