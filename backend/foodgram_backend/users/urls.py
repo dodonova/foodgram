@@ -1,6 +1,6 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from users.views import UserSubscriptionsViewSet, UserViewSet
+from users.views import SubscriptionViewSet, UserViewSet
 
 router = DefaultRouter()
 router.register('users', UserViewSet, basename='users')
@@ -8,7 +8,7 @@ router.register('users', UserViewSet, basename='users')
 urlpatterns = [
     path(
         'api/users/subscriptions/',
-        UserSubscriptionsViewSet.as_view({'get': 'list'}),
+        SubscriptionViewSet.as_view({'get': 'list'}),
         name='user-subscriptions'),
     path(
         'api/auth/token/login/',

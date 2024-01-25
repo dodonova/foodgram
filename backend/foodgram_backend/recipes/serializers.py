@@ -48,7 +48,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeIngredientSerializer(serializers.RelatedField):
-    def to_internal_value(self, data):
+    def to_internal_value(self, data):    
         logger.info(f'~~~~ START RecipeIngredientSerializer.to_internal_value()\n')
         obj = self.queryset.first()
         logger.info(f'~~~~~ QUERYSET: {type(self)} {self}\n')
@@ -81,11 +81,30 @@ class CustomTagSerializer(serializers.PrimaryKeyRelatedField):
         }
 
 
+class LimitedRecipeSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
+
+    def to_internal_value(self, data):
+        # logger.info(f'\n~~~~~START LimitedRecipeSerializer.to_internal_value')
+        # logger.info(f'INTERNAL VALUR CONTEXT: {self.context["recipes_limit"]}')
+        return super().to_internal_value(data)
+
+    def to_representation(self, value):
+        # logger.info(f'\n~~~~~START LimitedRecipeSerializer.to_representation')
+        # logger.info(f'RECIPES CONTEXT: {self.context}')
+        
+        return super().to_representation(value)
+
+
 class RecipeSerializer(serializers.ModelSerializer):
     ingredients = RecipeIngredientSerializer(
         many=True,
         queryset=RecipeIngredient.objects.select_related('ingredient'),
-        source='recipe_ingredients'
+        source='recipe_ingredients',
+        # read_only=True
     )
     tags = CustomTagSerializer(many=True, queryset=Tag.objects.all())
 
@@ -132,16 +151,56 @@ class RecipeSerializer(serializers.ModelSerializer):
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags_data)
         recipe.recipe_ingredients.set(recipe_ingredients_data)
+
+        logger.info(f'~~~~ RecipeIngredients: {recipe}\n')
         return recipe
 
     def to_internal_value(self, data):
         logger.info('~~~~ START RecipeSerializer.to_internal_value()')
         ret = super().to_internal_value(data)
-        logger.info(f'~~~~ VALIDATED_DATA: {ret}')
+        logger.info(f'~~~~ INTERNAL VALUE: {ret}')
         return ret
 
     def to_representation(self, value):
         logger.info('\n~~~~ START RecipeSerializer.to_representation()')
         ret = super().to_representation(value)
-        logger.info(f'~~~~ RETURN: {ret}')
+        logger.info(f'~~~~ REPRESENTATION: {ret}')
+        return ret
+
+
+class UserRecipesSerializer(UserGETSerializer):
+    recipes = LimitedRecipeSerializer(many=True, read_only=True)
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta(UserGETSerializer.Meta):
+        fields = (
+            'id', 'username', 'first_name', 'last_name',
+            'email', 'is_subscribed', 
+            'recipes_count', 'recipes'
+        )
+
+    def get_recipes_count(self, obj):
+        return obj.recipes.count()
+
+    def to_internal_value(self, data):
+        # logger.info(f'\n~~~~~START UserRecipesSerializer.to_internal_value')
+        # logger.info(f'INTERNAL VALUR CONTEXT: {self.context["recipes_limit"]}')
+        return super().to_internal_value(data)
+    
+    def to_representation(self, value):
+        # logger.info(f'\n~~~~~START UserRecipesSerializer.to_representation')
+        recipes_limit = self.context.get('recipes_limit')
+        # logger.info(f'REPRESENTATION CONTEXT: {type(self.context)} {self.context}')
+        logger.info(f'RECIPES LIMIT: {recipes_limit}')
+
+        ret = super().to_representation(value)
+        # logger.info(f'\n~~~~~END UserRecipesSerializer.to_representation')
+
+        # logger.info(f'REPRESENTATION RESULT BEFORE: {ret}')
+        
+        if recipes_limit is not None and recipes_limit.isdigit():
+            if int(recipes_limit) > 0:
+                ret["recipes"] = ret["recipes"][:int(recipes_limit)]
+
+        # logger.info(f'REPRESENTATION RESULT AFTER: {ret}')
         return ret

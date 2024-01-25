@@ -16,13 +16,15 @@ class IngredientFilterSet(filters.FilterSet):
     name = StartsWithFilter(field_name='name')
 
 
+
 class RecipeFilterSet(filters.FilterSet):
     author = filters.ModelChoiceFilter(queryset=User.objects.all())
-    tags = filters.ModelMultipleChoiceFilter(
-        queryset=Tag.objects.all(),
-        field_name='tag__name',
-        to_field_name='tags'
-    )
+    tags = filters.CharFilter(method='filter_tags')
+
+    def filter_tags(self, queryset, name, value):
+        tags = value.split(',')
+        queryset = queryset.filter(tags__slug__in=tags)
+        return queryset
 
     class Meta:
         model = Recipe

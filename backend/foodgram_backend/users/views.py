@@ -1,3 +1,6 @@
+import logging
+from venv import logger
+
 from django.db import IntegrityError
 from rest_framework import mixins, status, viewsets
 from rest_framework.authtoken.models import Token
@@ -12,6 +15,9 @@ from users.permissions import UsersAuthPermission
 from users.serializers import (TokenLoginSerializer,  # UserSerializer,
                                TokenLogoutSerializer, UserCreateSerializer,
                                UserGETSerializer)
+from recipes.serializers import UserRecipesSerializer
+
+logging.basicConfig(level=logging.INFO)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -19,18 +25,13 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserGETSerializer
     permission_classes = [UsersAuthPermission]
     pagination_class = LimitOffsetPagination
-    # page_size = 3
 
     def create(self, request, *args, **kwargs):
         self.serializer_class = UserCreateSerializer
 
         try:
             response = super().create(request, *args, **kwargs)
-            # Выводим информацию о созданном пользователе
-            # created_user_data = response.data
-            # print(f"User created: {created_user_data}")
             return response
-            # return super().create(request, *args, **kwargs)
 
         except IntegrityError as e:
             error_message = str(e)
@@ -84,8 +85,12 @@ class UserViewSet(viewsets.ModelViewSet):
         url_path='subscribe'
     )
     def subscribe_user(self, request, pk=None):
+        self.serializer_class = UserRecipesSerializer
         following_user = self.get_object()
         follower_user = request.user
+
+        recipes_limit = request.query_params.get('recipes_limit', None)
+        logger.info(f'~~~~~ RECIPES_LIMIT = {recipes_limit}')
 
         if request.method == 'DELETE':
             Subscription.objects.filter(
@@ -93,7 +98,10 @@ class UserViewSet(viewsets.ModelViewSet):
                 following=following_user
             ).delete()
             return Response(
-                {'detail': 'Successfully unsubscribed.'},
+                UserRecipesSerializer(
+                    following_user,
+                    context={'recipes_limit': recipes_limit}
+                ).data,
                 status=status.HTTP_200_OK
             )
 
@@ -103,19 +111,39 @@ class UserViewSet(viewsets.ModelViewSet):
                 following=following_user
             )
             if created:
-                return Response(
-                    {'detail': 'Successfully subscribed.'},
-                    status=status.HTTP_201_CREATED
-                )
+                response_status = status.HTTP_201_CREATED
+            else:
+                response_status = status.HTTP_200_OK
+
             return Response(
-                {'detail': 'Already subscribed.'},
-                status=status.HTTP_200_OK
+                UserRecipesSerializer(
+                    following_user,
+                    context={'recipes_limit': recipes_limit}
+                ).data,
+                status=response_status
             )
 
 
-class UserSubscriptionsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
-    serializer_class = UserGETSerializer
+class SubscriptionViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    serializer_class = UserRecipesSerializer
     permission_classes = [UsersAuthPermission]
+    pagination_class = LimitOffsetPagination
 
     def get_queryset(self):
         return self.request.user.subscriptions.all()
+
+    def list(self, request, *args, **kwargs):
+        recipes_limit = request.query_params.get('recipes_limit', None)
+        queryset = self.get_queryset()
+        page = self.paginate_queryset(queryset)
+
+        if page is not None:
+            serializer = UserRecipesSerializer(
+                page, context={'recipes_limit': recipes_limit}, many=True
+            )
+            return self.get_paginated_response(serializer.data)
+
+        serializer = UserRecipesSerializer(
+            queryset, context={'recipes_limit': recipes_limit}, many=True
+        )
+        return Response(serializer.data)

@@ -17,3 +17,8 @@ recipe_tag = RecipeTag(recipe=recipe, tag=tag1)
 
 recipe_serializer = RecipeGETSerializer(recipe)
 recipe_serializer.data
+
+
+
+
+
