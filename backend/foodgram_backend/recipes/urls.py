@@ -9,18 +9,17 @@ from recipes.views import (
     ImportIngredientsView
 )
 
-router_v1 = DefaultRouter()
-router_v1.register('tags', TagViewSet, basename='tags')
-router_v1.register(
-    'measurment-units',
-    MeasurementUnitViewSet,
+router = DefaultRouter()
+router.register('tags', TagViewSet, basename='tags')
+router.register(
+    'measurment-units', MeasurementUnitViewSet,
     basename='measurment_units')
-router_v1.register('recipes', RecipeViewSet, basename='recipes')
-router_v1.register('ingredients', IngredientViewSet, basename='ingredients')
+router.register('recipes', RecipeViewSet, basename='recipes')
+router.register('ingredients', IngredientViewSet, basename='ingredients')
 
 
 urlpatterns = [
-    path('api/', include(router_v1.urls)),
+    path('api/', include(router.urls)),
     path(
         'api/import/ingredients/',
         ImportIngredientsView.as_view(),

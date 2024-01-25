@@ -1,4 +1,6 @@
 import logging
+from venv import logger
+from xmlrpc.client import ResponseError
 
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
@@ -6,18 +8,20 @@ from rest_framework import filters
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.decorators import action
+
 
 
 # from recipes.serializers import IngredientImportSerializer
 
-from recipes.models import Ingredient, MeasurementUnit, Recipe, Tag
+from recipes.models import Ingredient, MeasurementUnit, Recipe, Tag, Favorites
 from recipes.serializers import (IngredientSerializer,
                                  MeasurementUnitSerializer,
                                  RecipeSerializer,
-                                #  RecipeCreateSerilalizer,
-                                 TagSerializer)
+                                 TagSerializer,
+                                 LimitedRecipeSerializer)
 from recipes.filters import IngredientFilterSet, RecipeFilterSet
-from users.permissions import IsAdminOrReadOnly
+from users.permissions import IsAdminOrReadOnly, UsersAuthPermission
 
 logging.basicConfig(level=logging.INFO)
 
@@ -34,7 +38,6 @@ class MeasurementUnitViewSet(viewsets.ModelViewSet):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    # http_method_names = ['get']
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     pagination_class = LimitOffsetPagination
@@ -54,6 +57,36 @@ class RecipeViewSet(viewsets.ModelViewSet):
     # def retrieve(self, request, *args, **kwargs):
     #     logging.warning(f"GET запрос recipes.")
     #     return super().retrieve(request, *args, **kwargs)
+
+    @action(
+        detail=True,
+        methods=['post'],
+        url_path='favorite',
+        permission_classes=[UsersAuthPermission]
+    )
+    def favorite(self, request, pk=None):
+        self.serializer_class = LimitedRecipeSerializer
+        try:
+            recipe = self.get_object()
+        except Exception as err:
+            logger.error(f'RECIPE NOT FOUND: {err}\n')
+            return Response(
+                        {'error': 'No Recipe matches the given query.'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+        user = self.request.user
+        favorite, created = Favorites.objects.get_or_create(
+            recipe=recipe, user=user
+        )
+        if created:
+            response_status = status.HTTP_201_CREATED
+        else:
+            response_status = status.HTTP_200_OK
+
+        return Response(
+            LimitedRecipeSerializer(recipe).data,
+            status=response_status
+        )
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):

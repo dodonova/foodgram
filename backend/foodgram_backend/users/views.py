@@ -147,3 +147,4 @@ class SubscriptionViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             queryset, context={'recipes_limit': recipes_limit}, many=True
         )
         return Response(serializer.data)
+

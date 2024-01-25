@@ -88,8 +88,9 @@ class LimitedRecipeSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'image', 'cooking_time')
 
     def to_internal_value(self, data):
-        # logger.info(f'\n~~~~~START LimitedRecipeSerializer.to_internal_value')
-        # logger.info(f'INTERNAL VALUR CONTEXT: {self.context["recipes_limit"]}')
+        logger.info(f'\n~~~~~START LimitedRecipeSerializer.to_internal_value')
+        logger.info(f'INTERNAL VALUE: {data}')
+        logger.info(f'INTERNAL PARENT: {self.parent}')
         return super().to_internal_value(data)
 
     def to_representation(self, value):
@@ -204,3 +205,5 @@ class UserRecipesSerializer(UserGETSerializer):
 
         # logger.info(f'REPRESENTATION RESULT AFTER: {ret}')
         return ret
+
+
