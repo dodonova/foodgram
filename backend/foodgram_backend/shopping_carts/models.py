@@ -8,7 +8,7 @@
 # from users.models import User
 
 
-# class ShoppingList(models.Model):
+# class ShoppingCart(models.Model):
 #     user = models.ForeignKey(
 #         User,
 #         verbose_name=_('user'),

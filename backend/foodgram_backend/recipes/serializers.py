@@ -3,12 +3,12 @@ import logging
 from venv import logger
 
 from django.core.files.base import ContentFile
+from foodgram_backend.settings import NAME_MAX_LENGTH
 from rest_framework import serializers
-
-from foodgram_backend.settings import (NAME_MAX_LENGTH)
-from recipes.models import (Favorites, Ingredient, MeasurementUnit, Recipe,
-                            RecipeIngredient, RecipeTag, ShoppingList, Tag)
 from users.serializers import UserGETSerializer
+
+from recipes.models import (Favorites, Ingredient, MeasurementUnit, Recipe,
+                            RecipeIngredient, RecipeTag, ShoppingCart, Tag)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -94,9 +94,6 @@ class LimitedRecipeSerializer(serializers.ModelSerializer):
         return super().to_internal_value(data)
 
     def to_representation(self, value):
-        # logger.info(f'\n~~~~~START LimitedRecipeSerializer.to_representation')
-        # logger.info(f'RECIPES CONTEXT: {self.context}')
-        
         return super().to_representation(value)
 
 
@@ -105,7 +102,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         many=True,
         queryset=RecipeIngredient.objects.select_related('ingredient'),
         source='recipe_ingredients',
-        # read_only=True
     )
     tags = CustomTagSerializer(many=True, queryset=Tag.objects.all())
 
@@ -139,7 +135,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     def get_is_in_shopping_cart(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            return ShoppingList.objects.filter(
+            return ShoppingCart.objects.filter(
                 user=request.user,
                 recipe=obj
             ).exists()
@@ -184,26 +180,25 @@ class UserRecipesSerializer(UserGETSerializer):
         return obj.recipes.count()
 
     def to_internal_value(self, data):
-        # logger.info(f'\n~~~~~START UserRecipesSerializer.to_internal_value')
-        # logger.info(f'INTERNAL VALUR CONTEXT: {self.context["recipes_limit"]}')
         return super().to_internal_value(data)
-    
+
     def to_representation(self, value):
-        # logger.info(f'\n~~~~~START UserRecipesSerializer.to_representation')
         recipes_limit = self.context.get('recipes_limit')
-        # logger.info(f'REPRESENTATION CONTEXT: {type(self.context)} {self.context}')
         logger.info(f'RECIPES LIMIT: {recipes_limit}')
 
         ret = super().to_representation(value)
-        # logger.info(f'\n~~~~~END UserRecipesSerializer.to_representation')
 
-        # logger.info(f'REPRESENTATION RESULT BEFORE: {ret}')
-        
         if recipes_limit is not None and recipes_limit.isdigit():
             if int(recipes_limit) > 0:
                 ret["recipes"] = ret["recipes"][:int(recipes_limit)]
 
-        # logger.info(f'REPRESENTATION RESULT AFTER: {ret}')
         return ret
 
 
+# class ShoppingCartSerializer(LimitedRecipeSerializer):
+#     pass
+
+class ShoppingCartSerializer(serializers.Serializer):
+    name = serializers.CharField(source='ingredient__name')
+    measurement_unit = serializers.CharField(source='measurement_unit__name')
+    amount = serializers.IntegerField(source='total_amount')

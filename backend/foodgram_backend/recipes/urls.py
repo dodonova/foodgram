@@ -23,6 +23,5 @@ urlpatterns = [
     path(
         'api/import/ingredients/',
         ImportIngredientsView.as_view(),
-        name='import-ingredients'),
-
+        name='import-ingredients')
 ]

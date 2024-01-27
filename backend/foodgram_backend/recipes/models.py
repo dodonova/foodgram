@@ -190,7 +190,7 @@ class Favorites(models.Model):
         verbose_name_plural = _('Favorites')
 
 
-class ShoppingList(models.Model):
+class ShoppingCart(models.Model):
     user = models.ForeignKey(
         User,
         verbose_name=_('user'),
@@ -199,9 +199,10 @@ class ShoppingList(models.Model):
     recipe = models.ForeignKey(
         Recipe,
         verbose_name=_('recipe'),
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        related_name='recipes'
     )
 
     class Meta:
-        verbose_name = _('shopping list'),
-        verbose_name_plural = _('Shopping Lists')
+        verbose_name = _('shopping cart'),
+        verbose_name_plural = _('Shopping Carts')

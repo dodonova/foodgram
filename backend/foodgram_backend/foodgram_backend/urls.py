@@ -14,7 +14,7 @@ urlpatterns = [
     # ),
     path('', include('recipes.urls')),
     path('', include('users.urls')),
-    # path('', include('shopping_lists.urls')),
+    # path('', include('shopping_carts.urls')),
 ]
 
 if settings.DEBUG:

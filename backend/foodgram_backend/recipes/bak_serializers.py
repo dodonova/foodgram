@@ -8,7 +8,7 @@ from rest_framework import serializers
 
 from foodgram_backend.settings import (NAME_MAX_LENGTH)
 from recipes.models import (Favorites, Ingredient, MeasurementUnit, Recipe,
-                            RecipeIngredient, RecipeTag, ShoppingList, Tag)
+                            RecipeIngredient, RecipeTag, ShoppingCart, Tag)
 from users.serializers import UserGETSerializer
 
 logging.basicConfig(level=logging.INFO)
@@ -161,7 +161,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     def get_is_in_shopping_cart(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            return ShoppingList.objects.filter(
+            return ShoppingCart.objects.filter(
                 user=request.user,
                 recipe=obj
             ).exists()

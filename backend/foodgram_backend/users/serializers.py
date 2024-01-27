@@ -1,8 +1,7 @@
-import re
+from foodgram_backend.settings import EMAIL_MAX_LENGTH, USERNAME_MAX_LENTH
 from rest_framework import serializers
 
 from users.models import User
-from foodgram_backend.settings import EMAIL_MAX_LENGTH, USERNAME_MAX_LENTH
 
 
 class UserCreateSerializer(serializers.ModelSerializer):

@@ -99,10 +99,10 @@ TRANSLATE = {
     'Subscriptions': {
         'ru': 'Подписки'
     },
-    'shopping list': {
+    'shopping cart': {
         'ru': 'список покупок'
     },
-    'Shopping Lists': {
+    'Shopping Carts': {
         'ru': 'Списки покупок'
-    }
+    },
 }

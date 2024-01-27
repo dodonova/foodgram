@@ -1,27 +1,20 @@
 import logging
 from venv import logger
-from xmlrpc.client import ResponseError
 
+from django.db.models import Sum
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
-from rest_framework import filters
+from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.decorators import action
-
-
-
-# from recipes.serializers import IngredientImportSerializer
-
-from recipes.models import Ingredient, MeasurementUnit, Recipe, Tag, Favorites
-from recipes.serializers import (IngredientSerializer,
-                                 MeasurementUnitSerializer,
-                                 RecipeSerializer,
-                                 TagSerializer,
-                                 LimitedRecipeSerializer)
-from recipes.filters import IngredientFilterSet, RecipeFilterSet
 from users.permissions import IsAdminOrReadOnly, UsersAuthPermission
+
+from recipes.filters import IngredientFilterSet, RecipeFilterSet
+from recipes.models import Favorites, Ingredient, MeasurementUnit, Recipe, RecipeIngredient, Tag, ShoppingCart
+from recipes.serializers import (IngredientSerializer, LimitedRecipeSerializer,
+                                 MeasurementUnitSerializer, RecipeSerializer,
+                                 ShoppingCartSerializer, TagSerializer)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -44,27 +37,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilterSet
 
-    # def get_serializer_class(self):
-    #     if self.action in ('list', 'retireve'):
-    #         return RecipeGETSerializer
-    #     elif self.action in ('create', 'update'):
-    #         return RecipeCreateSerilalizer
-
     def perform_create(self, serializer):
-        # serializer_class = RecipeCreateSerilalizer
         serializer.save(author=self.request.user)
 
-    # def retrieve(self, request, *args, **kwargs):
-    #     logging.warning(f"GET запрос recipes.")
-    #     return super().retrieve(request, *args, **kwargs)
-
-    @action(
-        detail=True,
-        methods=['post'],
-        url_path='favorite',
-        permission_classes=[UsersAuthPermission]
-    )
-    def favorite(self, request, pk=None):
+    def mark_recipe(self, request_type):
         self.serializer_class = LimitedRecipeSerializer
         try:
             recipe = self.get_object()
@@ -75,17 +51,81 @@ class RecipeViewSet(viewsets.ModelViewSet):
                         status=status.HTTP_400_BAD_REQUEST
                     )
         user = self.request.user
-        favorite, created = Favorites.objects.get_or_create(
-            recipe=recipe, user=user
-        )
+        if request_type == 'favorite':
+            favorite, created = Favorites.objects.get_or_create(
+                recipe=recipe, user=user
+            )
+        elif request_type == 'shopping_cart':
+            shopping_cart, created = ShoppingCart.objects.get_or_create(
+                recipe=recipe, user=user
+            )
+
+        #  !!!!! Temporary solution for endopoint download_shopping_cart
+        elif request_type == 'download_shopping_cart':
+            created = True
         if created:
             response_status = status.HTTP_201_CREATED
+            return Response(
+                LimitedRecipeSerializer(recipe).data,
+                status=response_status
+            )
         else:
-            response_status = status.HTTP_200_OK
+            return Response(
+                        {'error': 'Recipe is already in favorites.'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
 
+    @action(
+        detail=True,
+        methods=['post'],
+        url_path='favorite',
+        permission_classes=[UsersAuthPermission]
+    )
+    def favorite(self, request, pk=None):
+        return self.mark_recipe('favorite')
+
+    @action(
+        detail=True,
+        methods=['post'],
+        url_path='shopping_cart',
+        permission_classes=[UsersAuthPermission]
+    )
+    def shopping_cart(self, request, pk=None):
+        return self.mark_recipe('shopping_cart')
+
+    @action(
+        detail=False,
+        methods=['get'],
+        url_path='download_shopping_cart',
+        permission_classes=[UsersAuthPermission]
+    )
+    def download_shopping_cart(self, request, pk=None):
+        logger.info(f'~~~ START download_shopping_cart')
+        self.serializer_class = ShoppingCartSerializer
+
+        user = self.request.user
+        logger.info(f'~~~ USER: {type(user)} | {user}')
+
+        recipes_in_shopping_cart = ShoppingCart.objects.filter(user=user).values('recipe')
+        logger.info(f'~~~ RECIPES: {recipes_in_shopping_cart}')
+
+        ingredients = RecipeIngredient.objects.filter(recipe__in=recipes_in_shopping_cart)
+        logger.info(f'~~~ INGREDIENTS: {type(ingredients)} | {ingredients}')
+        
+        shopping_cart = (
+            ingredients
+            .values('ingredient__name', 'measurement_unit__name')
+            .annotate(
+                total_amount=Sum('amount'),
+            )
+        )
+        logger.info(f'~~~ SHOPPING CART: {type(shopping_cart)} | {shopping_cart}')
+
+        current_recipes = user.recipes.all()
+        serializer = ShoppingCartSerializer(shopping_cart, many=True)
         return Response(
-            LimitedRecipeSerializer(recipe).data,
-            status=response_status
+                serializer.data,
+                status=status.HTTP_200_OK
         )
 
 
@@ -96,20 +136,6 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
     filter_backends = (DjangoFilterBackend, )
     filterset_class = IngredientFilterSet
-
-
-
-
-    # def create(self, request, *args, **kwargs):
-    #     serializer = self.get_serializer(data=request.data)
-    #     serializer.is_valid(raise_exception=True)
-    #     self.perform_create(serializer)
-    #     headers = self.get_success_headers(serializer.data)
-    #     return Response(
-    #         serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
-    # def perform_create(self, serializer):
-    #     serializer.save()
 
 
 class ImportIngredientsView(APIView):

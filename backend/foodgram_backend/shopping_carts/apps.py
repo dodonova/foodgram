@@ -4,7 +4,7 @@ from foodgram_backend.translat_dict import get_name as _
 
 
 
-class ShoppingListsConfig(AppConfig):
+class ShoppingCartsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'shopping_lists'
-    verbose_name = _('Shopping Lists')
+    name = 'shopping_carts'
+    verbose_name = _('Shopping Carts')

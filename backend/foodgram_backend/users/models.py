@@ -1,14 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-
-from foodgram_backend.settings import (
-    NAME_MAX_LENGTH,
-    USERNAME_MAX_LENTH,
-    EMAIL_MAX_LENGTH,
-    PASSWORD_MAX_LENGTH,
-    LANGUAGE_CODE
-)
-
+from foodgram_backend.settings import (EMAIL_MAX_LENGTH, LANGUAGE_CODE,
+                                       NAME_MAX_LENGTH, PASSWORD_MAX_LENGTH,
+                                       USERNAME_MAX_LENTH)
 from foodgram_backend.translat_dict import get_name as _
 
 

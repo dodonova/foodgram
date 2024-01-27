@@ -2,20 +2,18 @@ import logging
 from venv import logger
 
 from django.db import IntegrityError
+from recipes.serializers import UserRecipesSerializer
 from rest_framework import mixins, status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
-from rest_framework.pagination import (
-    PageNumberPagination,
-    LimitOffsetPagination)
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 
 from users.models import Subscription, User
 from users.permissions import UsersAuthPermission
-from users.serializers import (TokenLoginSerializer,  # UserSerializer,
-                               TokenLogoutSerializer, UserCreateSerializer,
+from users.serializers import TokenLoginSerializer  # UserSerializer,
+from users.serializers import (TokenLogoutSerializer, UserCreateSerializer,
                                UserGETSerializer)
-from recipes.serializers import UserRecipesSerializer
 
 logging.basicConfig(level=logging.INFO)
 
@@ -48,7 +46,6 @@ class UserViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
 
-
     def token_login(self, request):
         serializer = TokenLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -60,7 +57,6 @@ class UserViewSet(viewsets.ModelViewSet):
         response['Authorization'] = f'Token {token.key}'
 
         return response
-
 
     @action(detail=False, methods=['post'], url_path='token/logout')
     def token_logout(self, request):
@@ -147,4 +143,3 @@ class SubscriptionViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             queryset, context={'recipes_limit': recipes_limit}, many=True
         )
         return Response(serializer.data)
-
