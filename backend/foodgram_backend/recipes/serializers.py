@@ -195,10 +195,7 @@ class UserRecipesSerializer(UserGETSerializer):
         return ret
 
 
-# class ShoppingCartSerializer(LimitedRecipeSerializer):
-#     pass
-
-class ShoppingCartSerializer(serializers.Serializer):
-    name = serializers.CharField(source='ingredient__name')
-    measurement_unit = serializers.CharField(source='measurement_unit__name')
-    amount = serializers.IntegerField(source='total_amount')
+# class ShoppingCartSerializer(serializers.Serializer):
+#     name = serializers.CharField(source='ingredient__name')
+#     measurement_unit = serializers.CharField(source='measurement_unit__name')
+#     amount = serializers.IntegerField(source='total_amount')

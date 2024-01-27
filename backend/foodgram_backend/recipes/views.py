@@ -1,20 +1,26 @@
+import csv
 import logging
 from venv import logger
 
 from django.db.models import Sum
+from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
+# from reportlab.pdfgen import canvas
+
+from foodgram_backend.translat_dict import get_name as _
 from users.permissions import IsAdminOrReadOnly, UsersAuthPermission
 
 from recipes.filters import IngredientFilterSet, RecipeFilterSet
-from recipes.models import Favorites, Ingredient, MeasurementUnit, Recipe, RecipeIngredient, Tag, ShoppingCart
+from recipes.models import (Favorites, Ingredient, MeasurementUnit,
+                            Recipe, RecipeIngredient, Tag, ShoppingCart)
 from recipes.serializers import (IngredientSerializer, LimitedRecipeSerializer,
                                  MeasurementUnitSerializer, RecipeSerializer,
-                                 ShoppingCartSerializer, TagSerializer)
+                                 TagSerializer)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -28,6 +34,14 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 class MeasurementUnitViewSet(viewsets.ModelViewSet):
     queryset = MeasurementUnit.objects.all()
     serializer_class = MeasurementUnitSerializer
+
+
+class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Ingredient.objects.all()
+    serializer_class = IngredientSerializer
+    pagination_class = None
+    filter_backends = (DjangoFilterBackend, )
+    filterset_class = IngredientFilterSet
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -60,9 +74,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 recipe=recipe, user=user
             )
 
-        #  !!!!! Temporary solution for endopoint download_shopping_cart
-        elif request_type == 'download_shopping_cart':
-            created = True
         if created:
             response_status = status.HTTP_201_CREATED
             return Response(
@@ -100,18 +111,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=[UsersAuthPermission]
     )
     def download_shopping_cart(self, request, pk=None):
-        logger.info(f'~~~ START download_shopping_cart')
-        self.serializer_class = ShoppingCartSerializer
-
-        user = self.request.user
-        logger.info(f'~~~ USER: {type(user)} | {user}')
-
-        recipes_in_shopping_cart = ShoppingCart.objects.filter(user=user).values('recipe')
-        logger.info(f'~~~ RECIPES: {recipes_in_shopping_cart}')
-
-        ingredients = RecipeIngredient.objects.filter(recipe__in=recipes_in_shopping_cart)
-        logger.info(f'~~~ INGREDIENTS: {type(ingredients)} | {ingredients}')
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="data.csv"'
         
+        user = self.request.user
+        recipes_in_shopping_cart = ShoppingCart.objects.filter(
+            user=user).values('recipe')
+        ingredients = RecipeIngredient.objects.filter(
+            recipe__in=recipes_in_shopping_cart)
         shopping_cart = (
             ingredients
             .values('ingredient__name', 'measurement_unit__name')
@@ -119,23 +126,19 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 total_amount=Sum('amount'),
             )
         )
-        logger.info(f'~~~ SHOPPING CART: {type(shopping_cart)} | {shopping_cart}')
+        writer = csv.writer(response)
+        title_row = (_('Ingredient'), _('Amount'), _('Measurement Unit'))
+        writer.writerow(title_row)
+        for record in shopping_cart:
+            # logger.info(f'RECORD: {record}')
+            record_tuple = (
+                record.get('ingredient__name'),
+                record.get('total_amount'),
+                record.get('measurement_unit__name'),
+            )
+            writer.writerow(record_tuple)
 
-        current_recipes = user.recipes.all()
-        serializer = ShoppingCartSerializer(shopping_cart, many=True)
-        return Response(
-                serializer.data,
-                status=status.HTTP_200_OK
-        )
-
-
-class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Ingredient.objects.all()
-    serializer_class = IngredientSerializer
-    # permission_classes = (IsAdminOrReadOnly, )
-    pagination_class = None
-    filter_backends = (DjangoFilterBackend, )
-    filterset_class = IngredientFilterSet
+        return response
 
 
 class ImportIngredientsView(APIView):

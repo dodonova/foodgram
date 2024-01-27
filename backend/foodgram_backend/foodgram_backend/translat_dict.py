@@ -30,11 +30,17 @@ TRANSLATE = {
     'measurement unit': {
         'ru': 'ед. измерения'
     },
+    'Measurement Unit': {
+        'ru': 'Единица измерения'
+    },
     'Measurement Units': {
         'ru': 'Единицы измерения'
     },
     'ingredient': {
         'ru': 'ингредиент'
+    },
+    'Ingredient': {
+        'ru': 'Ингредиент'
     },
     'Ingredients': {
         'ru': 'Ингредиенты'
@@ -65,6 +71,9 @@ TRANSLATE = {
     },
     'amount': {
         'ru': 'количество'
+    },
+    'Amount': {
+        'ru': 'Количество'
     },
     'Favorites': {
         'ru': 'Избранные'
