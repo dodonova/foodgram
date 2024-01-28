@@ -52,7 +52,6 @@ class UserViewSet(viewsets.ModelViewSet):
         user = User.objects.get(email=serializer.validated_data['email'])
         token, _ = Token.objects.get_or_create(user=user)
 
-        # Set the token in the response header
         response = Response({'auth_token': token.key},
                             status=status.HTTP_200_OK)
         response['Authorization'] = f'Token {token.key}'
