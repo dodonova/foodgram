@@ -53,7 +53,8 @@ class UserViewSet(viewsets.ModelViewSet):
         token, _ = Token.objects.get_or_create(user=user)
 
         # Set the token in the response header
-        response = Response({'auth_token': token.key}, status=status.HTTP_200_OK)
+        response = Response({'auth_token': token.key},
+                            status=status.HTTP_200_OK)
         response['Authorization'] = f'Token {token.key}'
 
         return response
