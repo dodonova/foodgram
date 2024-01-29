@@ -96,10 +96,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
             recipe = self.get_object()
         except Exception as err:
             logger.error(f'RECIPE NOT FOUND: {err}\n')
-            return Response(
-                        {'error': 'No Recipe matches the given query.'},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+            return Response({'error': 'No Recipe matches the given query.'},
+                            status=status.HTTP_400_BAD_REQUEST)
         user = self.request.user
         if request_type == 'favorite':
             favorite, created = Favorites.objects.get_or_create(
@@ -117,10 +115,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 status=response_status
             )
         else:
-            return Response(
-                        {'error': 'Recipe is already in favorites.'},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+            return Response({'error': 'Recipe is already in favorites.'},
+                            status=status.HTTP_400_BAD_REQUEST)
 
     @action(
         detail=True,

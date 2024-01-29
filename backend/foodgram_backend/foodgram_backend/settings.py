@@ -1,9 +1,5 @@
-from pathlib import Path
 import os
-from datetime import timedelta
-
-from django.utils.translation import gettext_lazy as _
-
+from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -20,7 +16,6 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     'recipes.apps.RecipesConfig',
     'users.apps.UsersConfig',
-    'shopping_carts.apps.ShoppingCartsConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

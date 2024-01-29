@@ -3,7 +3,6 @@ from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import include, path
-from django.views.generic import TemplateView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -14,7 +13,6 @@ urlpatterns = [
     # ),
     path('', include('recipes.urls')),
     path('', include('users.urls')),
-    # path('', include('shopping_carts.urls')),
 ]
 
 if settings.DEBUG:
