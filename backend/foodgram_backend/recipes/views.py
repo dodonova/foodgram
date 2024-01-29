@@ -15,10 +15,11 @@ from users.permissions import (IsAuthenticatedOrReadOnly,
 
 from recipes.filters import IngredientFilterSet, RecipeFilterSet
 from recipes.models import (Favorites, Ingredient, MeasurementUnit, Recipe,
-                            RecipeIngredient, ShoppingCart, Tag)
+                            RecipeIngredient, RecipeTag, ShoppingCart, Tag)
 from recipes.serializers import (IngredientSerializer, LimitedRecipeSerializer,
                                  MeasurementUnitSerializer, RecipeSerializer,
                                  TagSerializer)
+from recipes.validators import validate_recipe_data
 
 # from reportlab.pdfgen import canvas
 
@@ -52,16 +53,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filterset_class = RecipeFilterSet
     permission_classes = [IsAuthenticatedOrReadOnly]
 
+
     def create(self, request, *args, **kwargs):
-        logger.info("~~~~ START RecipeViewSet.create\n\n")
-        ingredients = request.data.get('ingredients', [])
-        tags = request.data.get('tags', [])
-        if not ingredients or not tags:
+        if not validate_recipe_data(request):
             return Response(
                 {'error': 'Ingredients and tags cannot be an empty list'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
         serializer = self.serializer_class(data=request.data)
         try:
             serializer.is_valid()
@@ -76,17 +74,26 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         self.permission_classes = [IsAuthorOrSafeMethods]
-        logger.info("~~~~ START RecipeViewSet.update\n\n")
+        if not validate_recipe_data(request):
+            return Response(
+                {'error': 'Ingredients and tags cannot be an empty list'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         instance = self.get_object()
+        RecipeIngredient.objects.filter(recipe=instance).delete()
+        RecipeTag.objects.filter(recipe=instance).delete()
         serializer = self.get_serializer(
-            instance, data=request.data, partial=True
+            instance, data=request.data, partial=False
         )
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return Response(serializer.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+            return Response(serializer.data)
+        except Exception as err:
+            return Response(
+                {"error:": str(err)}, status=status.HTTP_400_BAD_REQUEST)
 
     def perform_update(self, serializer):
-        logger.info("~~~~ START RecipeViewSet.perform_update\n\n")
         self.permission_classes = [UsersAuthPermission]
         serializer.save()
 

@@ -169,10 +169,11 @@ class RecipeSerializer(serializers.ModelSerializer):
         return recipe
 
     def to_internal_value(self, data):
-        for row in data.get('ingredients'):
-            logger.info(f"ROW:: {row}\n")
-            amount = row.get('amount')
-            validate_ingredients_amount(amount)
+        if data.get('ingredients') is not None:
+            for row in data.get('ingredients'):
+                logger.info(f"ROW:: {row}\n")
+                amount = row.get('amount')
+                validate_ingredients_amount(amount)
 
         ret = super().to_internal_value(data)
         return ret

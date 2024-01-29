@@ -146,6 +146,9 @@ class RecipeIngredient(models.Model):
         default=None
     )
 
+    class Meta:
+        unique_together = ('ingredient', 'recipe')
+
     def save(self, *args, **kwargs):
         if (
             not self.measurement_unit

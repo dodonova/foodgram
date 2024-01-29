@@ -3,6 +3,7 @@ from django.db import models
 from foodgram_backend.settings import EMAIL_MAX_LENGTH, USERNAME_MAX_LENTH
 from foodgram_backend.translat_dict import get_name as _
 
+from users.validators import validate_subscription
 
 class User(AbstractUser):
     groups = models.ManyToManyField(
@@ -62,7 +63,8 @@ class Subscription(models.Model):
         User,
         verbose_name=_('follower'),
         related_name='following_set',
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        validators=[validate_subscription]
     )
     following = models.ForeignKey(
         User,
@@ -74,3 +76,5 @@ class Subscription(models.Model):
     class Meta:
         verbose_name = _('subscription')
         verbose_name_plural = _('Subscriptions')
+    
+        

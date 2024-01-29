@@ -18,11 +18,19 @@ class IngredientFilterSet(filters.FilterSet):
 class RecipeFilterSet(filters.FilterSet):
     author = filters.ModelChoiceFilter(queryset=User.objects.all())
     tags = filters.CharFilter(method='filter_tags')
+    # is_in_shopping_cart = filters.BooleanFilter()
+    # is_in_shopping_cart = filters.BooleanFilter(method='filter_shopping_cart')
 
     def filter_tags(self, queryset, name, value):
         tags = value.split(',')
         queryset = queryset.filter(tags__slug__in=tags)
         return queryset
+
+    def filter_shopping_cart(self, queryset, name, value):
+        if value:
+            return queryset.filter(is_in_shopping_cart=True)
+        else:
+            return queryset.filter(is_in_shopping_cart=False)
 
     class Meta:
         model = Recipe

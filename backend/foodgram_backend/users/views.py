@@ -11,8 +11,8 @@ from rest_framework.response import Response
 
 from users.models import Subscription, User
 from users.permissions import UsersAuthPermission
-from users.serializers import TokenLoginSerializer  # UserSerializer,
-from users.serializers import (TokenLogoutSerializer, UserCreateSerializer,
+from users.serializers import (TokenLoginSerializer, TokenLogoutSerializer,
+                               UserCreateSerializer, SetPasswordSerializer,
                                UserGETSerializer)
 
 logging.basicConfig(level=logging.INFO)
@@ -63,7 +63,7 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = TokenLogoutSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         request.auth.delete()
-        return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['get', 'patch'])
     def me(self, request):
@@ -75,12 +75,37 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['post'], url_path='set_password')
+    def set_password(self, request):
+        serializer = SetPasswordSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            current_password = serializer.validated_data['current_password']
+            new_password = serializer.validated_data['new_password']
+            user = self.request.user
+
+            if not user.check_password(current_password):
+                return Response({'detail': 'Incorrect current password'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            if new_password == current_password:
+                return Response(
+                    {'detail': 'New and current passwords are similar.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            user.set_password(new_password)
+            user.save()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     @action(
         detail=True,
         methods=['post', 'delete'],
         url_path='subscribe'
     )
-    def subscribe_user(self, request, pk=None):
+    def subscribe(self, request, pk=None):
         self.serializer_class = UserRecipesSerializer
         following_user = self.get_object()
         follower_user = request.user
@@ -109,7 +134,7 @@ class UserViewSet(viewsets.ModelViewSet):
             if created:
                 response_status = status.HTTP_201_CREATED
             else:
-                response_status = status.HTTP_200_OK
+                response_status = status.HTTP_400_BAD_REQUEST
 
             return Response(
                 UserRecipesSerializer(

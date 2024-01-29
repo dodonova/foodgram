@@ -33,3 +33,10 @@ def validate_ingredients_amount(amount):
                f"from 0 to {MAX_INGREDIENTS_AMOUNT}")),
             params={"amount": amount},
         )
+
+def validate_recipe_data(request):
+    ingredients = request.data.get('ingredients', [])
+    tags = request.data.get('tags', [])
+    if not ingredients or not tags:
+        return False
+    return True

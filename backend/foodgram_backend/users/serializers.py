@@ -47,7 +47,6 @@ class UserGETSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
-        # user = self.context.get('request').user
         if request and request.user.is_authenticated:
             return obj.followers_set.filter(follower=request.user).exists()
         return False
@@ -63,6 +62,11 @@ class UserGETSerializer(serializers.ModelSerializer):
 class TokenLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
+
+
+class SetPasswordSerializer(serializers.Serializer):
+    current_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True)
 
 
 class TokenLogoutSerializer(serializers.Serializer):

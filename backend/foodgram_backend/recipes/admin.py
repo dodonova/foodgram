@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from recipes.models import (Favorites, Ingredient, MeasurementUnit, Recipe,
-                            ShoppingCart, Tag)
+                            RecipeIngredient, ShoppingCart, Tag)
 
 
 class CustomShoppingCart(admin.ModelAdmin):
@@ -76,3 +76,4 @@ admin.site.register(MeasurementUnit, MeasurementUnitAdmin)
 admin.site.register(Ingredient, IngredientAdmin)
 admin.site.register(ShoppingCart, CustomShoppingCart)
 admin.site.register(Favorites, FavoritesAdmin)
+admin.site.register(RecipeIngredient)
