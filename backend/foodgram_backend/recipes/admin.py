@@ -27,7 +27,7 @@ class RecipeAdmin(admin.ModelAdmin):
         'pub_date', 'portions'
     )
     list_editable = (
-        'cooking_time', 'image',     'portions'
+        'cooking_time', 'image', 'portions'
     )
     list_filter = ('tags', )
 
@@ -51,7 +51,7 @@ class FavoritesAdmin(admin.ModelAdmin):
 
 class IngredientAdmin(admin.ModelAdmin):
     list_display = (
-        'name',  'measurement_unit'
+        'name', 'measurement_unit'
     )
     list_editable = (
         'measurement_unit',
