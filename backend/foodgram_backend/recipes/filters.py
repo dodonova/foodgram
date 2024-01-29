@@ -1,8 +1,7 @@
-from dataclasses import field
 from django_filters import rest_framework as filters
-
-from recipes.models import Recipe, Tag
 from users.models import User
+
+from recipes.models import Recipe
 
 
 class StartsWithFilter(filters.CharFilter):
@@ -14,7 +13,6 @@ class StartsWithFilter(filters.CharFilter):
 
 class IngredientFilterSet(filters.FilterSet):
     name = StartsWithFilter(field_name='name')
-
 
 
 class RecipeFilterSet(filters.FilterSet):

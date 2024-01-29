@@ -8,7 +8,8 @@ from rest_framework import serializers
 from users.serializers import UserGETSerializer
 
 from recipes.models import (Favorites, Ingredient, MeasurementUnit, Recipe,
-                            RecipeIngredient, RecipeTag, ShoppingCart, Tag)
+                            RecipeIngredient, ShoppingCart, Tag)
+from recipes.validators import validate_ingredients_amount
 
 logging.basicConfig(level=logging.INFO)
 
@@ -47,27 +48,22 @@ class IngredientSerializer(serializers.ModelSerializer):
         read_only_fields = ('id',)
 
 
-class RecipeIngredientSerializer(serializers.RelatedField):
-    def to_internal_value(self, data):    
-        logger.info(f'~~~~ START RecipeIngredientSerializer.to_internal_value()\n')
-        obj = self.queryset.first()
-        logger.info(f'~~~~~ QUERYSET: {type(self)} {self}\n')
+class RecipeIngredientSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Ingredient
+        fields = ('id', 'name', 'measurement_unit')
+        read_only_fields = ('name', 'measurement_unit')
+
+    def to_internal_value(self, data):
         ingredient = Ingredient.objects.get(pk=data.get('id'))
-        recipe = obj.recipe
-        logger.info(f'~~~~~ CURRENT RECIPE: {type(recipe)} {recipe} \n  ')
-        obj = RecipeIngredient.objects.create(
-            recipe=recipe, ingredient=ingredient, amount=data.get('amount')
-        )
-        obj.save()
-        logger.info(f'~~~~~ RETURNING OBJ: {type(obj)} {obj} \n\n  ')
-        return obj
+        return ingredient
 
     def to_representation(self, value):
         return {
-            'id': value.ingredient.id,
-            'name': value.ingredient.name,
-            'measurement_unit': value.ingredient.measurement_unit.name,
-            'amount': value.amount
+            'id': value.id,
+            'name': value.name,
+            'measurement_unit': value.measurement_unit.name,
         }
 
 
@@ -88,9 +84,6 @@ class LimitedRecipeSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'image', 'cooking_time')
 
     def to_internal_value(self, data):
-        logger.info(f'\n~~~~~START LimitedRecipeSerializer.to_internal_value')
-        logger.info(f'INTERNAL VALUE: {data}')
-        logger.info(f'INTERNAL PARENT: {self.parent}')
         return super().to_internal_value(data)
 
     def to_representation(self, value):
@@ -98,17 +91,13 @@ class LimitedRecipeSerializer(serializers.ModelSerializer):
 
 
 class RecipeSerializer(serializers.ModelSerializer):
-    ingredients = RecipeIngredientSerializer(
-        many=True,
-        queryset=RecipeIngredient.objects.select_related('ingredient'),
-        source='recipe_ingredients',
-    )
+    ingredients = RecipeIngredientSerializer(many=True)
     tags = CustomTagSerializer(many=True, queryset=Tag.objects.all())
-
-    image = Base64ImageField(required=False, allow_null=True)
+    image = Base64ImageField()
     author = UserGETSerializer(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
+    name = serializers.CharField(max_length=NAME_MAX_LENGTH)
 
     class Meta:
         absctract = True
@@ -141,28 +130,70 @@ class RecipeSerializer(serializers.ModelSerializer):
             ).exists()
         return False
 
-    def create(self, validated_data):
-        logger.info('~~~~ START RecipeSerializer.create()')
+    def update(self, instance, validated_data):
         tags_data = validated_data.pop('tags', [])
-        recipe_ingredients_data = validated_data.pop('recipe_ingredients', [])
+        amounts = [
+            record.get('amount')
+            for record
+            in self.initial_data.get('ingredients')
+        ]
+        ingredients = validated_data.pop('ingredients', [])
+
+        recipe = instance
+        recipe.tags.set(tags_data)
+
+        for (ingredient, amount) in zip(ingredients, amounts):
+            RecipeIngredient.objects.create(
+                recipe=recipe, ingredient=ingredient, amount=amount
+            )
+        return recipe
+
+    def create(self, validated_data):
+        tags_data = validated_data.pop('tags', [])
+
+        amounts = [
+            record.get('amount')
+            for record
+            in self.initial_data.get('ingredients')
+        ]
+        ingredients = validated_data.pop('ingredients', [])
+
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags_data)
-        recipe.recipe_ingredients.set(recipe_ingredients_data)
 
-        logger.info(f'~~~~ RecipeIngredients: {recipe}\n')
+        for (ingredient, amount) in zip(ingredients, amounts):
+            RecipeIngredient.objects.create(
+                recipe=recipe, ingredient=ingredient, amount=amount
+            )
+
         return recipe
 
     def to_internal_value(self, data):
-        logger.info('~~~~ START RecipeSerializer.to_internal_value()')
+        for row in data.get('ingredients'):
+            logger.info(f"ROW:: {row}\n")
+            amount = row.get('amount')
+            validate_ingredients_amount(amount)
+
         ret = super().to_internal_value(data)
-        logger.info(f'~~~~ INTERNAL VALUE: {ret}')
         return ret
 
     def to_representation(self, value):
-        logger.info('\n~~~~ START RecipeSerializer.to_representation()')
-        ret = super().to_representation(value)
-        logger.info(f'~~~~ REPRESENTATION: {ret}')
-        return ret
+        recipe_id = value.id
+        recipe_ingredients = RecipeIngredient.objects.filter(
+            recipe=recipe_id).values('ingredient', 'amount')
+        json_data = super().to_representation(value)
+
+        for ingredient in json_data['ingredients']:
+            current_amount = recipe_ingredients.get(
+                ingredient=ingredient['id']).get('amount')
+            ingredient['amount'] = current_amount
+        return json_data
+
+    def validate_tags(self, value):
+        data = self.initial_data.get('tags')
+        if len(set(data)) != len(data):
+            raise serializers.ValidationError('Duplicate tags error.')
+        return value
 
 
 class UserRecipesSerializer(UserGETSerializer):
@@ -172,7 +203,7 @@ class UserRecipesSerializer(UserGETSerializer):
     class Meta(UserGETSerializer.Meta):
         fields = (
             'id', 'username', 'first_name', 'last_name',
-            'email', 'is_subscribed', 
+            'email', 'is_subscribed',
             'recipes_count', 'recipes'
         )
 
@@ -193,9 +224,3 @@ class UserRecipesSerializer(UserGETSerializer):
                 ret["recipes"] = ret["recipes"][:int(recipes_limit)]
 
         return ret
-
-
-# class ShoppingCartSerializer(serializers.Serializer):
-#     name = serializers.CharField(source='ingredient__name')
-#     measurement_unit = serializers.CharField(source='measurement_unit__name')
-#     amount = serializers.IntegerField(source='total_amount')

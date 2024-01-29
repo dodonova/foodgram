@@ -5,22 +5,22 @@ from venv import logger
 from django.db.models import Sum
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
+from foodgram_backend.translat_dict import get_name as _
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
-from rest_framework.views import APIView
-# from reportlab.pdfgen import canvas
-
-from foodgram_backend.translat_dict import get_name as _
-from users.permissions import IsAdminOrReadOnly, UsersAuthPermission
+from users.permissions import (IsAuthenticatedOrReadOnly,
+                               IsAuthorOrSafeMethods, UsersAuthPermission)
 
 from recipes.filters import IngredientFilterSet, RecipeFilterSet
-from recipes.models import (Favorites, Ingredient, MeasurementUnit,
-                            Recipe, RecipeIngredient, Tag, ShoppingCart)
+from recipes.models import (Favorites, Ingredient, MeasurementUnit, Recipe,
+                            RecipeIngredient, ShoppingCart, Tag)
 from recipes.serializers import (IngredientSerializer, LimitedRecipeSerializer,
                                  MeasurementUnitSerializer, RecipeSerializer,
                                  TagSerializer)
+
+# from reportlab.pdfgen import canvas
 
 logging.basicConfig(level=logging.INFO)
 
@@ -50,9 +50,45 @@ class RecipeViewSet(viewsets.ModelViewSet):
     pagination_class = LimitOffsetPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilterSet
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def create(self, request, *args, **kwargs):
+        logger.info("~~~~ START RecipeViewSet.create\n\n")
+        ingredients = request.data.get('ingredients', [])
+        tags = request.data.get('tags', [])
+        if not ingredients or not tags:
+            return Response(
+                {'error': 'Ingredients and tags cannot be an empty list'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = self.serializer_class(data=request.data)
+        try:
+            serializer.is_valid()
+            return super().create(request, *args, **kwargs)
+        except Exception as err:
+            return Response(
+                {"error:": str(err)}, status=status.HTTP_400_BAD_REQUEST)
 
     def perform_create(self, serializer):
+        logger.info("~~~~ START RecipeViewSet.perform_create\n\n")
         serializer.save(author=self.request.user)
+
+    def update(self, request, *args, **kwargs):
+        self.permission_classes = [IsAuthorOrSafeMethods]
+        logger.info("~~~~ START RecipeViewSet.update\n\n")
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
+
+    def perform_update(self, serializer):
+        logger.info("~~~~ START RecipeViewSet.perform_update\n\n")
+        self.permission_classes = [UsersAuthPermission]
+        serializer.save()
 
     def mark_recipe(self, request_type):
         self.serializer_class = LimitedRecipeSerializer
@@ -113,7 +149,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def download_shopping_cart(self, request, pk=None):
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="data.csv"'
-        
+
         user = self.request.user
         recipes_in_shopping_cart = ShoppingCart.objects.filter(
             user=user).values('recipe')
@@ -139,40 +175,3 @@ class RecipeViewSet(viewsets.ModelViewSet):
             writer.writerow(record_tuple)
 
         return response
-
-
-class ImportIngredientsView(APIView):
-    serializer_class = IngredientSerializer(many=True)
-    permission_classes = (IsAdminOrReadOnly, )
-
-    def post(self, request, *args, **kwargs):
-        data = request.data.get('data')
-        serializer = IngredientSerializer(data=data, many=True)
-        new_ids = []
-
-        if serializer.is_valid():
-            for item in serializer.validated_data:
-                measurement_unit_name = item.get('measurement_unit')
-                ingredient_name = item.get('name')
-                
-                measurement_unit, status = MeasurementUnit.objects.get_or_create(
-                    name=measurement_unit_name)
-            
-                Ingredient.objects.get_or_create(
-                    name=ingredient_name,
-                    measurement_unit=measurement_unit
-                )
-                new_ids.append(Ingredient.objects.get(name=ingredient_name).id)
-
-            return Response(
-                {'detail':
-                    f'Ingredients imported successfully. Information: {new_ids}'},
-                status=status.HTTP_201_CREATED)
-
-        return Response(
-            {
-                'detail': f'Invalid data. Data: {data}',
-                'errors': serializer.errors
-            },
-            status=status.HTTP_400_BAD_REQUEST
-        )

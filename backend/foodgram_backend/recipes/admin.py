@@ -1,34 +1,13 @@
-from re import A
 from django.contrib import admin
 
-from recipes.models import (
-    Recipe,
-    ShoppingCart,
-    Tag,
-    MeasurementUnit,
-    Ingredient,
-    RecipeIngredient,
-    # RecipeTag,
-    Favorites    
-)
-from users.models import User
-
-# admin.site.site_header = 'Рецепты'
-# admin.site.site_title = 'Рецепты'
-
-
-# class PecipeInline(admin.TabularInlie):
-#     model = User.recipes.through
+from recipes.models import (Favorites, Ingredient, MeasurementUnit, Recipe,
+                            ShoppingCart, Tag)
 
 
 class CustomShoppingCart(admin.ModelAdmin):
     model = ShoppingCart
     list_display = ('user', 'recipe')
-    list_filter =  ('user', 'recipe')
-
-    # def recipes_list(self, obj):
-    #     return ", ".join([recipe.name for recipe in obj.recipes.all()])
-    # recipes_list.short_description = ("Recipes")
+    list_filter = ('user', 'recipe')
 
 
 class IngredientInline(admin.TabularInline):
@@ -55,7 +34,9 @@ class RecipeAdmin(admin.ModelAdmin):
     inlines = (IngredientInline, TagInline)
 
     def ingredients_list(self, obj):
-        return ", ".join([ingredient.name for ingredient in obj.ingredients.all()])
+        return ", ".join(
+            [ingredient.name for ingredient in obj.ingredients.all()]
+        )
     ingredients_list.short_description = ("Ingredients")
 
     def tags_list(self, obj):
@@ -94,7 +75,4 @@ admin.site.register(Tag, TagAdmin)
 admin.site.register(MeasurementUnit, MeasurementUnitAdmin)
 admin.site.register(Ingredient, IngredientAdmin)
 admin.site.register(ShoppingCart, CustomShoppingCart)
-# admin.site.register(RecipeTag)
 admin.site.register(Favorites, FavoritesAdmin)
-
-

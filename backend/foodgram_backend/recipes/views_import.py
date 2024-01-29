@@ -1,26 +1,10 @@
-import csv
-import logging
-from venv import logger
-
-from django.db.models import Sum
-from django.http import HttpResponse
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status, viewsets
-from rest_framework.decorators import action
-from rest_framework.pagination import LimitOffsetPagination
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-# from reportlab.pdfgen import canvas
+from users.permissions import IsAdminOrReadOnly
 
-from foodgram_backend.translat_dict import get_name as _
-from users.permissions import IsAdminOrReadOnly, UsersAuthPermission
-
-from recipes.filters import IngredientFilterSet, RecipeFilterSet
-from recipes.models import (Favorites, Ingredient, MeasurementUnit,
-                            Recipe, RecipeIngredient, Tag, ShoppingCart)
-from recipes.serializers import (IngredientSerializer, LimitedRecipeSerializer,
-                                 MeasurementUnitSerializer, RecipeSerializer,
-                                 TagSerializer)
+from recipes.models import Ingredient, MeasurementUnit
+from recipes.serializers import IngredientSerializer
 
 
 class ImportIngredientsView(APIView):
@@ -36,10 +20,9 @@ class ImportIngredientsView(APIView):
             for item in serializer.validated_data:
                 measurement_unit_name = item.get('measurement_unit')
                 ingredient_name = item.get('name')
-                
-                measurement_unit, status = MeasurementUnit.objects.get_or_create(
+                measurement_unit, st = MeasurementUnit.objects.get_or_create(
                     name=measurement_unit_name)
-            
+
                 Ingredient.objects.get_or_create(
                     name=ingredient_name,
                     measurement_unit=measurement_unit
@@ -48,7 +31,7 @@ class ImportIngredientsView(APIView):
 
             return Response(
                 {'detail':
-                    f'Ingredients imported successfully. Information: {new_ids}'},
+                    f'Ingredients imported successfully: {new_ids}'},
                 status=status.HTTP_201_CREATED)
 
         return Response(

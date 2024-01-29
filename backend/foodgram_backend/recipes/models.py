@@ -1,14 +1,11 @@
-from django.core.validators import RegexValidator
 from django.db import models
-
 from foodgram_backend.settings import (DISPLAY_TEXT_MAX_LENGTH,
                                        NAME_MAX_LENGTH, SLUG_MAX_LENGHT)
 from foodgram_backend.translat_dict import get_name as _
-from recipes.validators import (ColorValidator, validate_ingredients_amount,
-                                validate_portions)
 from users.models import User
 
-# from django.utils.translation import gettext_lazy as _
+from recipes.validators import (ColorValidator, validate_cooking_time,
+                                validate_ingredients_amount, validate_portions)
 
 
 class Tag(models.Model):
@@ -44,7 +41,7 @@ class MeasurementUnit(models.Model):
     )
 
     class Meta:
-        verbose_name =  _('measurement unit'),
+        verbose_name = _('measurement unit'),
         verbose_name_plural = _('Measurement Units')
 
     def __str__(self):
@@ -93,7 +90,8 @@ class Recipe(models.Model):
         verbose_name=_('Ingredient')
     )
     cooking_time = models.PositiveIntegerField(
-        verbose_name=_('Cooking time')
+        verbose_name=_('Cooking time'),
+        validators=[validate_cooking_time]
     )
     image = models.ImageField(
         upload_to='recipe_images/',
@@ -108,7 +106,7 @@ class Recipe(models.Model):
         auto_now_add=True, db_index=True
     )
     portions = models.PositiveIntegerField(
-        verbose_name=_('portions'), 
+        verbose_name=_('portions'),
         validators=[validate_portions],
         default=1, blank=True,
     )
