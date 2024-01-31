@@ -3,13 +3,13 @@ import logging
 from venv import logger
 
 from django.core.files.base import ContentFile
-from foodgram_backend.settings import NAME_MAX_LENGTH
 from rest_framework import serializers
-from users.serializers import UserGETSerializer
 
+from foodgram_backend.settings import NAME_MAX_LENGTH
 from recipes.models import (Favorites, Ingredient, MeasurementUnit, Recipe,
                             RecipeIngredient, ShoppingCart, Tag)
 from recipes.validators import validate_ingredients_amount
+from users.serializers import UserGETSerializer
 
 logging.basicConfig(level=logging.INFO)
 
@@ -48,7 +48,25 @@ class IngredientSerializer(serializers.ModelSerializer):
         read_only_fields = ('id',)
 
 
+class LimitedRecipeSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
+
+
+class RecipeTagSerializer(serializers.PrimaryKeyRelatedField):
+    def to_representation(self, value):
+        return {
+            'id': value.id,
+            'name': value.name,
+            'slug': value.slug,
+            'color': value.color
+        }
+
+
 class RecipeIngredientSerializer(serializers.ModelSerializer):
+    measurement_unit = serializers.CharField(required=False)
 
     class Meta:
         model = Ingredient
@@ -59,40 +77,10 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
         ingredient = Ingredient.objects.get(pk=data.get('id'))
         return ingredient
 
-    def to_representation(self, value):
-        return {
-            'id': value.id,
-            'name': value.name,
-            'measurement_unit': value.measurement_unit.name,
-        }
-
-
-class CustomTagSerializer(serializers.PrimaryKeyRelatedField):
-    def to_representation(self, value):
-        return {
-            'id': value.id,
-            'name': value.name,
-            'slug': value.slug,
-            'color': value.color
-        }
-
-
-class LimitedRecipeSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Recipe
-        fields = ('id', 'name', 'image', 'cooking_time')
-
-    def to_internal_value(self, data):
-        return super().to_internal_value(data)
-
-    def to_representation(self, value):
-        return super().to_representation(value)
-
 
 class RecipeSerializer(serializers.ModelSerializer):
     ingredients = RecipeIngredientSerializer(many=True)
-    tags = CustomTagSerializer(many=True, queryset=Tag.objects.all())
+    tags = RecipeTagSerializer(many=True, queryset=Tag.objects.all())
     image = Base64ImageField()
     author = UserGETSerializer(read_only=True)
     is_favorited = serializers.SerializerMethodField()
@@ -130,48 +118,40 @@ class RecipeSerializer(serializers.ModelSerializer):
             ).exists()
         return False
 
-    def update(self, instance, validated_data):
+    def create_or_update(self, validated_data, instance=None):
         tags_data = validated_data.pop('tags', [])
+        ingredients = validated_data.pop('ingredients', [])
         amounts = [
             record.get('amount')
             for record
             in self.initial_data.get('ingredients')
         ]
-        ingredients = validated_data.pop('ingredients', [])
 
-        recipe = instance
+        if instance:
+            recipe = instance
+        else:
+            recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags_data)
 
-        for (ingredient, amount) in zip(ingredients, amounts):
-            RecipeIngredient.objects.create(
-                recipe=recipe, ingredient=ingredient, amount=amount
-            )
+        RecipeIngredient.objects.bulk_create([
+            RecipeIngredient(recipe=recipe,
+                             ingredient=ingredient,
+                             amount=amount)
+            for (ingredient, amount)
+            in zip(ingredients, amounts)
+        ])
         return recipe
+
+    def update(self, instance, validated_data):
+        return self.create_or_update(validated_data, instance)
 
     def create(self, validated_data):
-        tags_data = validated_data.pop('tags', [])
-
-        amounts = [
-            record.get('amount')
-            for record
-            in self.initial_data.get('ingredients')
-        ]
-        ingredients = validated_data.pop('ingredients', [])
-
-        recipe = Recipe.objects.create(**validated_data)
-        recipe.tags.set(tags_data)
-
-        for (ingredient, amount) in zip(ingredients, amounts):
-            RecipeIngredient.objects.create(
-                recipe=recipe, ingredient=ingredient, amount=amount
-            )
-
-        return recipe
+        return self.create_or_update(validated_data)
 
     def to_internal_value(self, data):
+        logger.info(" To_INTERNAL_VALUE METHOD STARTED")
         if data.get('ingredients') is not None:
             for row in data.get('ingredients'):
-                logger.info(f"ROW:: {row}\n")
                 amount = row.get('amount')
                 validate_ingredients_amount(amount)
 
@@ -190,11 +170,36 @@ class RecipeSerializer(serializers.ModelSerializer):
             ingredient['amount'] = current_amount
         return json_data
 
-    def validate_tags(self, value):
-        data = self.initial_data.get('tags')
+    def validate_list(self, value, list_name):
+        data = self.initial_data.get(list_name)
+        if len(data) == 0:
+            raise serializers.ValidationError(f'{list_name} list cannot be empty.')
         if len(set(data)) != len(data):
-            raise serializers.ValidationError('Duplicate tags error.')
+            raise serializers.ValidationError(f'Duplicate {list_name} error.')
         return value
+
+    def validate_tags(self, value):
+        logger.info(f"~~~ VALIDATE TAGS:\n{value}")
+
+        return value
+
+    def validate_ingredients(self, value):
+        logger.info(f"~~~ VALIDATE INGREDIENTS:\n{value}")
+        return value
+
+    def is_valid(self, *, raise_exception=False):
+        logger.info(" IS_VALID METHOD STARTED")
+        tags_data = self.initial_data.get('tags', [])
+        if len(tags_data) == 0:
+            raise serializers.ValidationError('Tags list cannot be empty.')
+        if len(set(tags_data)) != len(tags_data):
+            raise serializers.ValidationError('Duplicate tags error.')
+        ingredients_data = self.initial_data.get('ingredients', [])
+        if len(ingredients_data) == 0:
+            raise serializers.ValidationError(
+                'Ingredients list cannot be empty.'
+            )
+        return super().is_valid(raise_exception=False)
 
 
 class UserRecipesSerializer(UserGETSerializer):
@@ -216,8 +221,6 @@ class UserRecipesSerializer(UserGETSerializer):
 
     def to_representation(self, value):
         recipes_limit = self.context.get('recipes_limit')
-        logger.info(f'RECIPES LIMIT: {recipes_limit}')
-
         ret = super().to_representation(value)
 
         if recipes_limit is not None and recipes_limit.isdigit():

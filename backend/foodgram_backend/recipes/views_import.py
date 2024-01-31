@@ -1,10 +1,10 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from users.permissions import IsAdminOrReadOnly
 
 from recipes.models import Ingredient, MeasurementUnit
 from recipes.serializers import IngredientSerializer
+from users.permissions import IsAdminOrReadOnly
 
 
 class ImportIngredientsView(APIView):

@@ -1,6 +1,6 @@
-from foodgram_backend.settings import EMAIL_MAX_LENGTH, USERNAME_MAX_LENTH
 from rest_framework import serializers
 
+from foodgram_backend.settings import EMAIL_MAX_LENGTH, USERNAME_MAX_LENTH
 from users.models import User
 
 

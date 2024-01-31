@@ -1,9 +1,10 @@
 import logging
 from venv import logger
+
 from django_filters import rest_framework as filters
-from users.models import User
 
 from recipes.models import Ingredient, Recipe
+from users.models import User
 
 logging.basicConfig(level=logging.INFO)
 
@@ -45,7 +46,7 @@ class RecipeFilterSet(filters.FilterSet):
     # def filter_is_in_shopping_cart(self, queryset, name, value):
     #     is_in_shopping_cart_value = self.parent.serializer.context['is_in_shopping_cart']
     #     logger.info()
-        
+
 
     class Meta:
         model = Recipe

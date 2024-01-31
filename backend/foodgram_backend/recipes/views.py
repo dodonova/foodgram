@@ -5,14 +5,12 @@ from venv import logger
 from django.db.models import Sum
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
-from foodgram_backend.translat_dict import get_name as _
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
-from users.permissions import (IsAuthenticatedOrReadOnly,
-                               IsAuthorOrSafeMethods, UsersAuthPermission)
 
+from foodgram_backend.translat_dict import get_name as _
 from recipes.filters import IngredientFilterSet, RecipeFilterSet
 from recipes.models import (Favorites, Ingredient, MeasurementUnit, Recipe,
                             RecipeIngredient, RecipeTag, ShoppingCart, Tag)
@@ -20,6 +18,8 @@ from recipes.serializers import (IngredientSerializer, LimitedRecipeSerializer,
                                  MeasurementUnitSerializer, RecipeSerializer,
                                  TagSerializer)
 from recipes.validators import validate_recipe_data
+from users.permissions import (IsAuthenticatedOrReadOnly,
+                               IsAuthorOrSafeMethods, UsersAuthPermission)
 
 # from reportlab.pdfgen import canvas
 
@@ -53,13 +53,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filterset_class = RecipeFilterSet
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-
     def create(self, request, *args, **kwargs):
-        if not validate_recipe_data(request):
-            return Response(
-                {'error': 'Ingredients and tags cannot be an empty list'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
         serializer = self.serializer_class(data=request.data)
         try:
             serializer.is_valid()
@@ -87,17 +81,18 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
         try:
             serializer.is_valid(raise_exception=True)
-            self.perform_update(serializer)
+            # self.perform_update(serializer)
+            serializer.save()
             return Response(serializer.data)
         except Exception as err:
             return Response(
                 {"error:": str(err)}, status=status.HTTP_400_BAD_REQUEST)
 
-    def perform_update(self, serializer):
-        self.permission_classes = [UsersAuthPermission]
-        serializer.save()
+    # def perform_update(self, serializer):
+    #     self.permission_classes = [UsersAuthPermission]
+    #     serializer.save()
 
-    def mark_recipe(self, request_type):
+    def mark_recipe(self, model):
         self.serializer_class = LimitedRecipeSerializer
         try:
             recipe = self.get_object()
@@ -106,15 +101,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return Response({'error': 'No Recipe matches the given query.'},
                             status=status.HTTP_400_BAD_REQUEST)
         user = self.request.user
-        if request_type == 'favorite':
-            favorite, created = Favorites.objects.get_or_create(
-                recipe=recipe, user=user
-            )
-        elif request_type == 'shopping_cart':
-            shopping_cart, created = ShoppingCart.objects.get_or_create(
-                recipe=recipe, user=user
-            )
 
+        favorite, created = model.objects.get_or_create(recipe=recipe,
+                                                        user=user)
         if created:
             response_status = status.HTTP_201_CREATED
             return Response(
@@ -132,7 +121,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=[UsersAuthPermission]
     )
     def favorite(self, request, pk=None):
-        return self.mark_recipe('favorite')
+        return self.mark_recipe(Favorites)
 
     @action(
         detail=True,
@@ -141,7 +130,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=[UsersAuthPermission]
     )
     def shopping_cart(self, request, pk=None):
-        return self.mark_recipe('shopping_cart')
+        return self.mark_recipe(ShoppingCart)
 
     @action(
         detail=False,

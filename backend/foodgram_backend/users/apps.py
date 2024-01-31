@@ -1,4 +1,5 @@
 from django.apps import AppConfig
+
 from foodgram_backend.translat_dict import get_name as _
 
 

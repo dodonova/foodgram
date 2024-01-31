@@ -1,11 +1,11 @@
 from django.db import models
+
 from foodgram_backend.settings import (DISPLAY_TEXT_MAX_LENGTH,
                                        NAME_MAX_LENGTH, SLUG_MAX_LENGHT)
 from foodgram_backend.translat_dict import get_name as _
-from users.models import User
-
 from recipes.validators import (ColorValidator, validate_cooking_time,
                                 validate_ingredients_amount, validate_portions)
+from users.models import User
 
 
 class Tag(models.Model):
@@ -43,6 +43,7 @@ class MeasurementUnit(models.Model):
     class Meta:
         verbose_name = _('measurement unit'),
         verbose_name_plural = _('Measurement Units')
+        ordering = ('name', )
 
     def __str__(self):
         return self.name[:DISPLAY_TEXT_MAX_LENGTH]
@@ -114,6 +115,7 @@ class Recipe(models.Model):
     class Meta:
         verbose_name = _('recipe'),
         verbose_name_plural = _('Recipes')
+        ordering = ('-pub_date', )
 
     def __str__(self):
         return self.name[:DISPLAY_TEXT_MAX_LENGTH]

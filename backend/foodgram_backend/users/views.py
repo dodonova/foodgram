@@ -2,17 +2,17 @@ import logging
 from venv import logger
 
 from django.db import IntegrityError
-from recipes.serializers import UserRecipesSerializer
 from rest_framework import mixins, status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 
+from recipes.serializers import UserRecipesSerializer
 from users.models import Subscription, User
 from users.permissions import UsersAuthPermission
-from users.serializers import (TokenLoginSerializer, TokenLogoutSerializer,
-                               UserCreateSerializer, SetPasswordSerializer,
+from users.serializers import (SetPasswordSerializer, TokenLoginSerializer,
+                               TokenLogoutSerializer, UserCreateSerializer,
                                UserGETSerializer)
 
 logging.basicConfig(level=logging.INFO)
@@ -78,7 +78,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='set_password')
     def set_password(self, request):
         serializer = SetPasswordSerializer(data=request.data)
-        
+
         if serializer.is_valid():
             current_password = serializer.validated_data['current_password']
             new_password = serializer.validated_data['new_password']
