@@ -1,5 +1,10 @@
+import logging
+from venv import logger
+
 from rest_framework.permissions import (SAFE_METHODS, BasePermission,
                                         IsAuthenticatedOrReadOnly)
+
+logging.basicConfig(level=logging.INFO)
 
 
 class IsAdmin(BasePermission):
@@ -23,6 +28,8 @@ class IsAdminOrReadOnly(IsAdmin):
 class IsAuthorOrSafeMethods(IsAuthenticatedOrReadOnly):
 
     def has_object_permission(self, request, view, obj):
+        logger.info(f"~~~~~ CHECK PERMISSION IsAuthorOrSafeMethods\n")
+        logger.info(f"~~~~~ {view.action}")
         return (
             request.method in SAFE_METHODS
             or obj.author == request.user
@@ -31,23 +38,31 @@ class IsAuthorOrSafeMethods(IsAuthenticatedOrReadOnly):
         )
 
 
+class RecipeActionsPermission(BasePermission):
+    def has_permission(self, request, view):
+        logger.info(f"ACTION: {view.action}")
+
+        return (request.user.is_authenticated
+                or view.action in ('list', 'retrieve'))
+
+    def has_object_permission(self, request, view, obj):
+        logger.info(f"OBJECT ACTION: {view.action}")
+
+        if view.action in ('update', 'partial_update', 'destroy'):
+            return (obj.author == request.user
+                    or request.user.is_admin)
+
+        return (request.user.is_authenticated
+                or view.action in ('list', 'retrieve'))
+
+
+# class UsersAuthPermission(IsAuthenticatedOrReadOnly):
+#     pass
+
 class UsersAuthPermission(BasePermission):
     def has_permission(self, request, view):
         return (
-            view.action in [
-                'create',
-                'token_login',
-                'list',
-                'retrieve'
-                # 'token_login_with_token'
-            ]
+            view.action in ('create', 'token_login',
+                            'list', 'retrieve')
             or request.user.is_authenticated
         )
-
-# class UsersAuthPermission(BasePermission):
-#     def has_permission(self, request, view):
-#         # Check if the user is authenticated
-#         if request.user and request.user.is_authenticated:
-#             # Check if the request has a valid token
-#             return request.auth and request.auth.is_valid(request.user)
-#         return False

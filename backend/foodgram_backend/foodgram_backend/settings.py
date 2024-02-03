@@ -2,6 +2,8 @@ import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+# APP_DIR = Path(__file__).resolve().parent.parent
+# BASE_DIR = '/'
 
 SECRET_KEY = os.getenv(
     'SECRET_KEY',
@@ -96,17 +98,6 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/
 
-
-# LANGUAGES = [
-#     ('en-us', _('English')),
-#     ('ru', _('Russian')),
-# ]
-
-# LOCALE_PATHS = [
-#     os.path.join(BASE_DIR, 'recipes/translations')
-# ]
-
-
 LANGUAGE_CODE = 'ru'
 # LANGUAGE_CODE = 'en-us'
 
@@ -140,6 +131,12 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'collected_static'
+
+# STATIC_URL = '/static/'
+# STATIC_ROOT = APP_DIR / 'collected_static'
+
+# MEDIA_URL = '/media/'
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 NAME_MAX_LENGTH = 200

@@ -29,7 +29,7 @@ class RecipeAdmin(admin.ModelAdmin):
     list_editable = (
         'cooking_time', 'image', 'portions'
     )
-    list_filter = ('tags', )
+    list_filter = ('tags', 'author')
 
     inlines = (IngredientInline, TagInline)
 

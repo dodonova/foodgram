@@ -1,17 +1,13 @@
 import base64
-import logging
-from venv import logger
 
 from django.core.files.base import ContentFile
-from rest_framework import serializers
-
 from foodgram_backend.settings import NAME_MAX_LENGTH
+from rest_framework import serializers
+from users.serializers import UserGETSerializer
+
 from recipes.models import (Favorites, Ingredient, MeasurementUnit, Recipe,
                             RecipeIngredient, ShoppingCart, Tag)
 from recipes.validators import validate_ingredients_amount
-from users.serializers import UserGETSerializer
-
-logging.basicConfig(level=logging.INFO)
 
 
 class Base64ImageField(serializers.ImageField):
@@ -19,9 +15,7 @@ class Base64ImageField(serializers.ImageField):
         if isinstance(data, str) and data.startswith('data:image'):
             format, imgstr = data.split(';base64,')
             ext = format.split('/')[-1]
-
             data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
-
         return super().to_internal_value(data)
 
 
@@ -87,8 +81,11 @@ class RecipeSerializer(serializers.ModelSerializer):
     is_in_shopping_cart = serializers.SerializerMethodField()
     name = serializers.CharField(max_length=NAME_MAX_LENGTH)
 
+    # TODO: Раскомментировать перед деплоем на сервер!!!!!!!!
+    # cooking_time = serializers.CharField()
+
     class Meta:
-        absctract = True
+        # absctract = True
         model = Recipe
         fields = (
             'id', 'tags', 'author', 'ingredients',
@@ -149,7 +146,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         return self.create_or_update(validated_data)
 
     def to_internal_value(self, data):
-        logger.info(" To_INTERNAL_VALUE METHOD STARTED")
         if data.get('ingredients') is not None:
             for row in data.get('ingredients'):
                 amount = row.get('amount')
@@ -170,25 +166,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             ingredient['amount'] = current_amount
         return json_data
 
-    def validate_list(self, value, list_name):
-        data = self.initial_data.get(list_name)
-        if len(data) == 0:
-            raise serializers.ValidationError(f'{list_name} list cannot be empty.')
-        if len(set(data)) != len(data):
-            raise serializers.ValidationError(f'Duplicate {list_name} error.')
-        return value
-
-    def validate_tags(self, value):
-        logger.info(f"~~~ VALIDATE TAGS:\n{value}")
-
-        return value
-
-    def validate_ingredients(self, value):
-        logger.info(f"~~~ VALIDATE INGREDIENTS:\n{value}")
-        return value
-
     def is_valid(self, *, raise_exception=False):
-        logger.info(" IS_VALID METHOD STARTED")
         tags_data = self.initial_data.get('tags', [])
         if len(tags_data) == 0:
             raise serializers.ValidationError('Tags list cannot be empty.')

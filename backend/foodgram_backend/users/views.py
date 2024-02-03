@@ -109,21 +109,29 @@ class UserViewSet(viewsets.ModelViewSet):
         self.serializer_class = UserRecipesSerializer
         following_user = self.get_object()
         follower_user = request.user
-
+        if following_user == follower_user:
+            return Response(
+                {'detail': 'Self subscription is forbidden.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         recipes_limit = request.query_params.get('recipes_limit', None)
         logger.info(f'~~~~~ RECIPES_LIMIT = {recipes_limit}')
 
         if request.method == 'DELETE':
-            Subscription.objects.filter(
+            result, obj = Subscription.objects.filter(
                 follower=follower_user,
                 following=following_user
             ).delete()
+            
+            if result == 0:
+                return Response({'error': 'There is no sush record.'},
+                                status=status.HTTP_400_BAD_REQUEST)
             return Response(
                 UserRecipesSerializer(
                     following_user,
                     context={'recipes_limit': recipes_limit}
                 ).data,
-                status=status.HTTP_200_OK
+                status=status.HTTP_204_NO_CONTENT
             )
 
         if request.method == 'POST':

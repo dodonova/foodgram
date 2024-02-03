@@ -1,11 +1,11 @@
 from django.db import models
-
 from foodgram_backend.settings import (DISPLAY_TEXT_MAX_LENGTH,
                                        NAME_MAX_LENGTH, SLUG_MAX_LENGHT)
 from foodgram_backend.translat_dict import get_name as _
+from users.models import User
+
 from recipes.validators import (ColorValidator, validate_cooking_time,
                                 validate_ingredients_amount, validate_portions)
-from users.models import User
 
 
 class Tag(models.Model):
@@ -58,9 +58,7 @@ class Ingredient(models.Model):
         MeasurementUnit,
         related_name='measurement_unit',
         verbose_name=_('measurement unit'),
-        blank=True,
-        null=True,
-        default=None,
+        blank=True, null=True, default=None,
         on_delete=models.SET_DEFAULT,
     )
 
@@ -125,7 +123,6 @@ class RecipeIngredient(models.Model):
     ingredient = models.ForeignKey(
         Ingredient,
         verbose_name=_('ingredient'),
-        # related_name='ingredients'
         on_delete=models.CASCADE,
     )
     recipe = models.ForeignKey(
@@ -143,49 +140,32 @@ class RecipeIngredient(models.Model):
         verbose_name=_('measurement unit'),
         related_name='recipe_ingredients',
         on_delete=models.SET_DEFAULT,
-        blank=True,
-        null=True,
-        default=None
+        blank=True, null=True, default=None
     )
 
     class Meta:
         unique_together = ('ingredient', 'recipe')
 
-    def save(self, *args, **kwargs):
-        if (
-            not self.measurement_unit
-            # and self.ingredient.measurement_unit
-        ):
-            self.measurement_unit = self.ingredient.measurement_unit
-        super().save(*args, **kwargs)
-
     def __str__(self):
         return f'{self.recipe} {self.ingredient}'[:DISPLAY_TEXT_MAX_LENGTH]
 
+    def save(self, *args, **kwargs):
+        if not self.measurement_unit:
+            self.measurement_unit = self.ingredient.measurement_unit
+        super().save(*args, **kwargs)
+
 
 class RecipeTag(models.Model):
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE
-    )
-    tag = models.ForeignKey(
-        Tag,
-        on_delete=models.CASCADE
-    )
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
 
     def __str__(self):
         return f'{self.recipe} {self.tag}'[:DISPLAY_TEXT_MAX_LENGTH]
 
 
 class Favorites(models.Model):
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE
-    )
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE
-    )
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -194,17 +174,11 @@ class Favorites(models.Model):
 
 
 class ShoppingCart(models.Model):
-    user = models.ForeignKey(
-        User,
-        verbose_name=_('user'),
-        on_delete=models.CASCADE
-    )
-    recipe = models.ForeignKey(
-        Recipe,
-        verbose_name=_('recipe'),
-        on_delete=models.CASCADE,
-        related_name='recipes'
-    )
+    user = models.ForeignKey(User, verbose_name=_('user'),
+                             on_delete=models.CASCADE)
+    recipe = models.ForeignKey(Recipe, verbose_name=_('recipe'),
+                               on_delete=models.CASCADE,
+                               related_name='recipes')
 
     class Meta:
         verbose_name = _('shopping cart'),

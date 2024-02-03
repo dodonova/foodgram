@@ -5,12 +5,13 @@ from venv import logger
 from django.db.models import Sum
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
+from foodgram_backend.translat_dict import get_name as _
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
+from users.permissions import RecipeActionsPermission
 
-from foodgram_backend.translat_dict import get_name as _
 from recipes.filters import IngredientFilterSet, RecipeFilterSet
 from recipes.models import (Favorites, Ingredient, MeasurementUnit, Recipe,
                             RecipeIngredient, RecipeTag, ShoppingCart, Tag)
@@ -18,8 +19,6 @@ from recipes.serializers import (IngredientSerializer, LimitedRecipeSerializer,
                                  MeasurementUnitSerializer, RecipeSerializer,
                                  TagSerializer)
 from recipes.validators import validate_recipe_data
-from users.permissions import (IsAuthenticatedOrReadOnly,
-                               IsAuthorOrSafeMethods, UsersAuthPermission)
 
 # from reportlab.pdfgen import canvas
 
@@ -32,7 +31,7 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
 
 
-class MeasurementUnitViewSet(viewsets.ModelViewSet):
+class MeasurementUnitViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = MeasurementUnit.objects.all()
     serializer_class = MeasurementUnitSerializer
 
@@ -51,23 +50,21 @@ class RecipeViewSet(viewsets.ModelViewSet):
     pagination_class = LimitOffsetPagination
     filter_backends = [DjangoFilterBackend]
     filterset_class = RecipeFilterSet
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [RecipeActionsPermission]
 
     def create(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         try:
             serializer.is_valid()
-            return super().create(request, *args, **kwargs)
+            serializer.save(author=self.request.user)
+            return Response(serializer.data,
+                            status=status.HTTP_201_CREATED)
         except Exception as err:
             return Response(
                 {"error:": str(err)}, status=status.HTTP_400_BAD_REQUEST)
 
-    def perform_create(self, serializer):
-        logger.info("~~~~ START RecipeViewSet.perform_create\n\n")
-        serializer.save(author=self.request.user)
-
     def update(self, request, *args, **kwargs):
-        self.permission_classes = [IsAuthorOrSafeMethods]
+        # self.permission_classes = [RecipeActionsPermission]
         if not validate_recipe_data(request):
             return Response(
                 {'error': 'Ingredients and tags cannot be an empty list'},
@@ -88,11 +85,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return Response(
                 {"error:": str(err)}, status=status.HTTP_400_BAD_REQUEST)
 
-    # def perform_update(self, serializer):
-    #     self.permission_classes = [UsersAuthPermission]
-    #     serializer.save()
-
-    def mark_recipe(self, model):
+    def mark_recipe(self, request, model):
         self.serializer_class = LimitedRecipeSerializer
         try:
             recipe = self.get_object()
@@ -102,41 +95,53 @@ class RecipeViewSet(viewsets.ModelViewSet):
                             status=status.HTTP_400_BAD_REQUEST)
         user = self.request.user
 
-        favorite, created = model.objects.get_or_create(recipe=recipe,
-                                                        user=user)
-        if created:
-            response_status = status.HTTP_201_CREATED
+        if request.method == 'POST':
+            object, created = model.objects.get_or_create(recipe=recipe,
+                                                          user=user)
+            if created:
+                response_status = status.HTTP_201_CREATED
+                return Response(
+                    LimitedRecipeSerializer(recipe).data,
+                    status=response_status
+                )
+            else:
+                return Response({'error': 'Recipe is already in marked.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+        if request.method == 'DELETE':
+            result, obj = model.objects.filter(recipe=recipe,
+                                               user=user).delete()
+            if result == 0:
+                return Response({'error': 'There is no sush record.'},
+                                status=status.HTTP_400_BAD_REQUEST)
             return Response(
                 LimitedRecipeSerializer(recipe).data,
-                status=response_status
+                status=status.HTTP_204_NO_CONTENT
             )
-        else:
-            return Response({'error': 'Recipe is already in favorites.'},
-                            status=status.HTTP_400_BAD_REQUEST)
 
     @action(
         detail=True,
-        methods=['post'],
+        methods=['post', 'delete'],
         url_path='favorite',
-        permission_classes=[UsersAuthPermission]
+        # permission_classes=[UsersAuthPermission]
     )
     def favorite(self, request, pk=None):
-        return self.mark_recipe(Favorites)
+        return self.mark_recipe(request, Favorites)
 
     @action(
         detail=True,
-        methods=['post'],
+        methods=['post', 'delete'],
         url_path='shopping_cart',
-        permission_classes=[UsersAuthPermission]
+        # permission_classes=[UsersAuthPermission]
     )
     def shopping_cart(self, request, pk=None):
-        return self.mark_recipe(ShoppingCart)
+        return self.mark_recipe(request, ShoppingCart)
 
     @action(
         detail=False,
         methods=['get'],
         url_path='download_shopping_cart',
-        permission_classes=[UsersAuthPermission]
+        # permission_classes=[UsersAuthPermission]
     )
     def download_shopping_cart(self, request, pk=None):
         response = HttpResponse(content_type='text/csv')
