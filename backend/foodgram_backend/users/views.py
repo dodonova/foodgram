@@ -2,13 +2,13 @@ import logging
 from venv import logger
 
 from django.db import IntegrityError
+from recipes.serializers import UserRecipesSerializer
 from rest_framework import mixins, status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 
-from recipes.serializers import UserRecipesSerializer
 from users.models import Subscription, User
 from users.permissions import UsersAuthPermission
 from users.serializers import (SetPasswordSerializer, TokenLoginSerializer,
@@ -122,7 +122,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 follower=follower_user,
                 following=following_user
             ).delete()
-            
+
             if result == 0:
                 return Response({'error': 'There is no sush record.'},
                                 status=status.HTTP_400_BAD_REQUEST)

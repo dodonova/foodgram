@@ -20,7 +20,6 @@ from recipes.serializers import (IngredientSerializer, LimitedRecipeSerializer,
                                  TagSerializer)
 from recipes.validators import validate_recipe_data
 
-# from reportlab.pdfgen import canvas
 
 logging.basicConfig(level=logging.INFO)
 
@@ -64,7 +63,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 {"error:": str(err)}, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
-        # self.permission_classes = [RecipeActionsPermission]
         if not validate_recipe_data(request):
             return Response(
                 {'error': 'Ingredients and tags cannot be an empty list'},
@@ -78,7 +76,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
         try:
             serializer.is_valid(raise_exception=True)
-            # self.perform_update(serializer)
             serializer.save()
             return Response(serializer.data)
         except Exception as err:
@@ -123,7 +120,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         detail=True,
         methods=['post', 'delete'],
         url_path='favorite',
-        # permission_classes=[UsersAuthPermission]
     )
     def favorite(self, request, pk=None):
         return self.mark_recipe(request, Favorites)
@@ -132,7 +128,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         detail=True,
         methods=['post', 'delete'],
         url_path='shopping_cart',
-        # permission_classes=[UsersAuthPermission]
     )
     def shopping_cart(self, request, pk=None):
         return self.mark_recipe(request, ShoppingCart)
@@ -141,7 +136,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         detail=False,
         methods=['get'],
         url_path='download_shopping_cart',
-        # permission_classes=[UsersAuthPermission]
     )
     def download_shopping_cart(self, request, pk=None):
         response = HttpResponse(content_type='text/csv')
@@ -163,7 +157,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         title_row = (_('Ingredient'), _('Amount'), _('Measurement Unit'))
         writer.writerow(title_row)
         for record in shopping_cart:
-            # logger.info(f'RECORD: {record}')
             record_tuple = (
                 record.get('ingredient__name'),
                 record.get('total_amount'),

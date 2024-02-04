@@ -80,12 +80,9 @@ class RecipeSerializer(serializers.ModelSerializer):
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
     name = serializers.CharField(max_length=NAME_MAX_LENGTH)
-
-    # TODO: Раскомментировать перед деплоем на сервер!!!!!!!!
-    # cooking_time = serializers.CharField()
+    cooking_time = serializers.CharField()
 
     class Meta:
-        # absctract = True
         model = Recipe
         fields = (
             'id', 'tags', 'author', 'ingredients',
