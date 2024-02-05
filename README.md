@@ -6,7 +6,7 @@
 
 Сервис размещен по адресу: https://try-foodgram.ddns.net
 
-Документация к API доступна по адресу: https://try-foodgram.ddns.net/api/docs
+Документация к API доступна по адресу: https://try-foodgram.ddns.net/api/docs/
 
 ## Как развернуть проект на своем сервере
 1. Установить веб-сервер nginx
