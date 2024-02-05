@@ -1,4 +1,4 @@
-#  Проект Foodgram.
+#  Проект Foodgram
 
 ## Описание проекта
 
@@ -21,7 +21,8 @@ server {
 }
 ```
 6. Проверить конфигурацию nginx: 
-```sudo nginx -t
+```
+sudo nginx -t
 ```
 7. Запустить Docker Compose на сервере в папке c проектом: 
 ```
