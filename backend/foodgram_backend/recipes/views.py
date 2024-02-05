@@ -20,7 +20,6 @@ from recipes.serializers import (IngredientSerializer, LimitedRecipeSerializer,
                                  TagSerializer)
 from recipes.validators import validate_recipe_data
 
-
 logging.basicConfig(level=logging.INFO)
 
 

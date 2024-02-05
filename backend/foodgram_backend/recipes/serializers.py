@@ -1,7 +1,3 @@
-import logging
-# from venv import logger
-
-
 import base64
 
 from django.core.files.base import ContentFile
@@ -12,8 +8,6 @@ from users.serializers import UserGETSerializer
 from recipes.models import (Favorites, Ingredient, MeasurementUnit, Recipe,
                             RecipeIngredient, ShoppingCart, Tag)
 from recipes.validators import validate_ingredients_amount
-
-logging.basicConfig(level=logging.INFO)
 
 
 class Base64ImageField(serializers.ImageField):
