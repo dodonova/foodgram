@@ -1,6 +1,4 @@
 import csv
-import logging
-from venv import logger
 
 from django.db.models import Sum
 from django.http import HttpResponse
@@ -18,9 +16,7 @@ from recipes.models import (Favorites, Ingredient, MeasurementUnit, Recipe,
 from recipes.serializers import (IngredientSerializer, LimitedRecipeSerializer,
                                  MeasurementUnitSerializer, RecipeSerializer,
                                  TagSerializer)
-from recipes.validators import validate_recipe_data
-
-logging.basicConfig(level=logging.INFO)
+from recipes.validators import validate_ingredients_data, validate_tags_data
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -52,26 +48,20 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
-        try:
-            serializer.is_valid()
+
+        if serializer.is_valid():
             serializer.save(author=self.request.user)
             return Response(serializer.data,
                             status=status.HTTP_201_CREATED)
-        except Exception as err:
-            return Response(
-                {"error:": str(err)}, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
-        if not validate_recipe_data(request):
-            return Response(
-                {'error': 'Ingredients and tags cannot be an empty list'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        validate_ingredients_data(request)
+        validate_tags_data(request)
         instance = self.get_object()
         RecipeIngredient.objects.filter(recipe=instance).delete()
         RecipeTag.objects.filter(recipe=instance).delete()
         serializer = self.get_serializer(
-            instance, data=request.data, partial=False
+            instance, data=request.data, partial=True
         )
         try:
             serializer.is_valid(raise_exception=True)
@@ -81,62 +71,83 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return Response(
                 {"error:": str(err)}, status=status.HTTP_400_BAD_REQUEST)
 
-    def mark_recipe(self, request, model):
+    def mark_recipe_post(self, model):
+        """
+        POST Method for marking recipe as favorite or adding to shopping cart.
+        """
         self.serializer_class = LimitedRecipeSerializer
         try:
             recipe = self.get_object()
         except Exception as err:
-            logger.error(f'RECIPE NOT FOUND: {err}\n')
             return Response({'error': 'No Recipe matches the given query.'},
                             status=status.HTTP_400_BAD_REQUEST)
         user = self.request.user
 
-        if request.method == 'POST':
-            object, created = model.objects.get_or_create(recipe=recipe,
-                                                          user=user)
-            if created:
-                response_status = status.HTTP_201_CREATED
-                return Response(
-                    LimitedRecipeSerializer(recipe).data,
-                    status=response_status
-                )
-            else:
-                return Response({'error': 'Recipe is already in marked.'},
-                                status=status.HTTP_400_BAD_REQUEST)
-
-        if request.method == 'DELETE':
-            result, obj = model.objects.filter(recipe=recipe,
-                                               user=user).delete()
-            if result == 0:
-                return Response({'error': 'There is no sush record.'},
-                                status=status.HTTP_400_BAD_REQUEST)
+        object, created = model.objects.get_or_create(recipe=recipe, user=user)
+        if created:
+            response_status = status.HTTP_201_CREATED
             return Response(
                 LimitedRecipeSerializer(recipe).data,
-                status=status.HTTP_204_NO_CONTENT
+                status=response_status
             )
+        else:
+            return Response({'error': 'Recipe is already in marked.'},
+                            status=status.HTTP_400_BAD_REQUEST)
 
-    @action(
-        detail=True,
-        methods=['post', 'delete'],
-        url_path='favorite',
-    )
+    def mark_recipe_delete(self, model):
+        """
+        DELETE Method for unmarking a recipe as favorite
+        or removing from shopping cart.
+        """
+        self.serializer_class = LimitedRecipeSerializer
+        try:
+            recipe = self.get_object()
+        except Exception as err:
+            return Response({'error': 'No Recipe matches the given query.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        user = self.request.user
+
+        deleted, object = model.objects.filter(recipe=recipe,
+                                               user=user).delete()
+        if deleted == 0:
+            return Response({'error': 'There is no sush record.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            LimitedRecipeSerializer(recipe).data,
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+    @action(detail=True,
+            methods=['post', 'delete'],
+            url_path='favorite')
     def favorite(self, request, pk=None):
-        return self.mark_recipe(request, Favorites)
+        """
+        Endpoint for marking or unmarking a recipe as favorite.
+        """
+        if request.method == 'POST':
+            return self.mark_recipe_post(Favorites)
+        elif request.method == 'DELETE':
+            return self.mark_recipe_delete(Favorites)
 
-    @action(
-        detail=True,
-        methods=['post', 'delete'],
-        url_path='shopping_cart',
-    )
+    @action(detail=True,
+            methods=['post', 'delete'],
+            url_path='shopping_cart')
     def shopping_cart(self, request, pk=None):
-        return self.mark_recipe(request, ShoppingCart)
+        """
+        Endpoint for adding or removing a recipe from the shopping cart.
+        """
+        if request.method == 'POST':
+            return self.mark_recipe_post(ShoppingCart)
+        elif request.method == 'DELETE':
+            return self.mark_recipe_delete(ShoppingCart)
 
-    @action(
-        detail=False,
-        methods=['get'],
-        url_path='download_shopping_cart',
-    )
+    @action(detail=False,
+            methods=['get'],
+            url_path='download_shopping_cart')
     def download_shopping_cart(self, request, pk=None):
+        """
+        Endpoint for downloading the shopping cart as a CSV file.
+        """
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="data.csv"'
 

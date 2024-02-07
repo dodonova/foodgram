@@ -1,24 +1,20 @@
 import os
 from pathlib import Path
 
-# To local debugging:
-
-# BASE_DIR = Path(__file__).resolve().parent.parent
-
-# To deploy to remote server:
-
-APP_DIR = Path(__file__).resolve().parent.parent
-BASE_DIR = '/'
-
 SECRET_KEY = os.getenv(
     'SECRET_KEY',
     'django-insecure-&j0*)pmo7$a_+8vh5%s^h8mq8mc2!%=a1s34=^7$gbs%=z=2f('
 )
 
+# To local debugging:
+# BASE_DIR = Path(__file__).resolve().parent.parent
 # DEBUG = True
-DEBUG = os.getenv('DEBUG', False) == 'True'
+# ALLOWED_HOSTS = ['127.0.0.1']
 
-# ALLOWED_HOSTS = []
+# To deploy to remote server:
+APP_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = '/'
+DEBUG = os.getenv('DEBUG', False) == 'True'
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', "127.0.0.1, localhost").split(', ')
 
 
@@ -69,7 +65,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'foodgram_backend.wsgi.application'
 
 # To deploy to remote server:
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -82,7 +77,6 @@ DATABASES = {
 }
 
 # To local debugging:
-
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.sqlite3',
