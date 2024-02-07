@@ -78,7 +78,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         self.serializer_class = LimitedRecipeSerializer
         try:
             recipe = self.get_object()
-        except Exception as err:
+        except Exception:
             return Response({'error': 'No Recipe matches the given query.'},
                             status=status.HTTP_400_BAD_REQUEST)
         user = self.request.user
@@ -102,7 +102,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         self.serializer_class = LimitedRecipeSerializer
         try:
             recipe = self.get_object()
-        except Exception as err:
+        except Exception:
             return Response({'error': 'No Recipe matches the given query.'},
                             status=status.HTTP_400_BAD_REQUEST)
         user = self.request.user
