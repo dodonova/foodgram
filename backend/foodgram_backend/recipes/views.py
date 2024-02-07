@@ -1,6 +1,4 @@
 import csv
-import logging
-from venv import logger
 
 from django.db.models import Sum
 from django.http import HttpResponse
@@ -18,9 +16,7 @@ from recipes.models import (Favorites, Ingredient, MeasurementUnit, Recipe,
 from recipes.serializers import (IngredientSerializer, LimitedRecipeSerializer,
                                  MeasurementUnitSerializer, RecipeSerializer,
                                  TagSerializer)
-from recipes.validators import validate_tags_data, validate_ingredients_data
-
-logging.basicConfig(level=logging.INFO)
+from recipes.validators import validate_ingredients_data, validate_tags_data
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -65,7 +61,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         RecipeIngredient.objects.filter(recipe=instance).delete()
         RecipeTag.objects.filter(recipe=instance).delete()
         serializer = self.get_serializer(
-            instance, data=request.data, partial=False
+            instance, data=request.data, partial=True
         )
         try:
             serializer.is_valid(raise_exception=True)
@@ -83,7 +79,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         try:
             recipe = self.get_object()
         except Exception as err:
-            logger.error(f'RECIPE NOT FOUND: {err}\n')
             return Response({'error': 'No Recipe matches the given query.'},
                             status=status.HTTP_400_BAD_REQUEST)
         user = self.request.user
@@ -108,7 +103,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         try:
             recipe = self.get_object()
         except Exception as err:
-            logger.error(f'RECIPE NOT FOUND: {err}\n')
             return Response({'error': 'No Recipe matches the given query.'},
                             status=status.HTTP_400_BAD_REQUEST)
         user = self.request.user

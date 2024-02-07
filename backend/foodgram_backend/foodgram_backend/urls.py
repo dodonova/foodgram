@@ -6,11 +6,6 @@ from django.urls import include, path
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # path(
-    #     'redoc/',
-    #     TemplateView.as_view(template_name='redoc.html'),
-    #     name='redoc'
-    # ),
     path('', include('recipes.urls')),
     path('', include('users.urls')),
 ]

@@ -1,8 +1,6 @@
-from genericpath import exists
+import base64
 import logging
 from venv import logger
-
-import base64
 
 from django.core.files.base import ContentFile
 from foodgram_backend.settings import NAME_MAX_LENGTH
@@ -101,7 +99,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     name = serializers.CharField(max_length=NAME_MAX_LENGTH)
 
     # To deploy to remote server:
-    # cooking_time = serializers.CharField()
+    cooking_time = serializers.CharField()
 
     class Meta:
         model = Recipe
@@ -192,10 +190,9 @@ class RecipeSerializer(serializers.ModelSerializer):
                 )
 
     def is_valid(self, *, raise_exception=False):
-        fields = ['name', 'image', 'text',
-                  'cooking_time', 'tags', 'ingredients']
+        fields = ['name', 'text', 'cooking_time', 'tags', 'ingredients']
         for field in self.initial_data:
-            if self.initial_data.get(field, []):
+            if field in fields and self.initial_data.get(field, []):
                 fields.remove(field)
 
         if fields:
