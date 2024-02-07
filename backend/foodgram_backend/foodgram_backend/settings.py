@@ -131,6 +131,8 @@ REST_FRAMEWORK = {
 
 AUTH_USER_MODEL = 'users.User'
 
+LOGS_ROOT = '/app/logs/'
+
 # To local debugging:
 
 # MEDIA_URL = '/media/'

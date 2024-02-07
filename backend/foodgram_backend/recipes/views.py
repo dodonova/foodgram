@@ -1,4 +1,5 @@
 import csv
+import logging
 
 from django.db.models import Sum
 from django.http import HttpResponse
@@ -10,6 +11,7 @@ from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from users.permissions import RecipeActionsPermission
 
+from foodgram_backend.settings import LOGS_ROOT
 from recipes.filters import IngredientFilterSet, RecipeFilterSet
 from recipes.models import (Favorites, Ingredient, MeasurementUnit, Recipe,
                             RecipeIngredient, RecipeTag, ShoppingCart, Tag)
@@ -17,6 +19,14 @@ from recipes.serializers import (IngredientSerializer, LimitedRecipeSerializer,
                                  MeasurementUnitSerializer, RecipeSerializer,
                                  TagSerializer)
 from recipes.validators import validate_ingredients_data, validate_tags_data
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+handler = logging.FileHandler(f"{LOGS_ROOT}{__name__}.log", mode='w')
+formatter = logging.Formatter("%(name)s %(asctime)s %(levelname)s %(message)s")
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -51,6 +61,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         if serializer.is_valid():
             serializer.save(author=self.request.user)
+            logger.info(
+                f"New recipe successfully created ID:{serializer.data['id']}"
+            )
             return Response(serializer.data,
                             status=status.HTTP_201_CREATED)
 
@@ -63,13 +76,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(
             instance, data=request.data, partial=True
         )
-        try:
-            serializer.is_valid(raise_exception=True)
+        if serializer.is_valid(raise_exception=True):
             serializer.save()
             return Response(serializer.data)
-        except Exception as err:
-            return Response(
-                {"error:": str(err)}, status=status.HTTP_400_BAD_REQUEST)
 
     def mark_recipe_post(self, model):
         """
