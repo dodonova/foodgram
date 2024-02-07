@@ -1,4 +1,4 @@
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, BadRequest
 from django.core.validators import RegexValidator
 from django.utils.translation import gettext_lazy as _
 from foodgram_backend.settings import (MAX_COOKING_TIME,
@@ -29,16 +29,17 @@ def validate_cooking_time(cooking_time):
 def validate_ingredients_amount(amount):
     amount_num = float(amount)
     if amount_num > MAX_INGREDIENTS_AMOUNT or amount_num <= 0:
-        raise ValidationError(
-            _((f"ingredients amount must be "
-               f"from 0 to {MAX_INGREDIENTS_AMOUNT}")),
-            params={"amount": amount_num},
-        )
+        raise BadRequest((f"ingredients amount must be "
+                          f"from 0 to {MAX_INGREDIENTS_AMOUNT}"))
 
 
-def validate_recipe_data(request):
-    ingredients = request.data.get('ingredients', [])
+def validate_tags_data(request):
     tags = request.data.get('tags', [])
-    if not ingredients or not tags:
-        return False
-    return True
+    if not tags:
+        raise BadRequest("Tags list cannot be empty.")
+
+
+def validate_ingredients_data(request):
+    ingredients = request.data.get('ingredients', [])
+    if not ingredients:
+        raise BadRequest("Ingredients list cannot be empty.")

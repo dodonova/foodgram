@@ -3,20 +3,20 @@ from pathlib import Path
 
 # To local debugging:
 
-# BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 # To deploy to remote server:
 
-APP_DIR = Path(__file__).resolve().parent.parent
-BASE_DIR = '/'
+# APP_DIR = Path(__file__).resolve().parent.parent
+# BASE_DIR = '/'
 
 SECRET_KEY = os.getenv(
     'SECRET_KEY',
     'django-insecure-&j0*)pmo7$a_+8vh5%s^h8mq8mc2!%=a1s34=^7$gbs%=z=2f('
 )
 
-# DEBUG = True
-DEBUG = os.getenv('DEBUG', False) == 'True'
+DEBUG = True
+# DEBUG = os.getenv('DEBUG', False) == 'True'
 
 # ALLOWED_HOSTS = []
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', "127.0.0.1, localhost").split(', ')
@@ -70,25 +70,25 @@ WSGI_APPLICATION = 'foodgram_backend.wsgi.application'
 
 # To deploy to remote server:
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'foodgram'),
-        'USER': os.getenv('POSTGRES_USER', 'foodgram_user'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'foodgram_password'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', 5432)
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': os.getenv('POSTGRES_DB', 'foodgram'),
+#         'USER': os.getenv('POSTGRES_USER', 'foodgram_user'),
+#         'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'foodgram_password'),
+#         'HOST': os.getenv('DB_HOST', 'localhost'),
+#         'PORT': os.getenv('DB_PORT', 5432)
+#     }
+# }
 
 # To local debugging:
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -139,19 +139,19 @@ AUTH_USER_MODEL = 'users.User'
 
 # To local debugging:
 
-# MEDIA_URL = '/media/'
-# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# STATIC_URL = '/static/'
-# STATIC_ROOT = BASE_DIR / 'collected_static'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'collected_static'
 
 # To deploy to remote server:
 
-STATIC_URL = '/static/django/'
-STATIC_ROOT = '/app/static_django'
+# STATIC_URL = '/static/django/'
+# STATIC_ROOT = '/app/static_django'
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = '/media/'
+# MEDIA_URL = '/media/'
+# MEDIA_ROOT = '/media/'
 
 
 NAME_MAX_LENGTH = 200
