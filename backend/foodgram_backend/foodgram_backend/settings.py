@@ -189,6 +189,7 @@ STATIC_ROOT = '/app/static_django'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = '/media/'
 
+os.makedirs(LOGS_ROOT, exist_ok=True)
 
 NAME_MAX_LENGTH = 200
 SLUG_MAX_LENGHT = 50
