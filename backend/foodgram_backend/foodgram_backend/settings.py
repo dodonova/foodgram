@@ -1,6 +1,18 @@
+"""
+Django settings for the Foodgram project.
+
+This module contains all settings for the Foodgram project. It configures
+database settings, internationalization, static files, media files, logging,
+authentication, permissions, pagination, and other settings.
+
+For the local debugging configuration, uncomment relevant lines
+and comment out remote server lines.
+"""
+
 import os
 from pathlib import Path
 
+# Secret key for Django project
 SECRET_KEY = os.getenv(
     'SECRET_KEY',
     'django-insecure-&j0*)pmo7$a_+8vh5%s^h8mq8mc2!%=a1s34=^7$gbs%=z=2f('
@@ -17,6 +29,29 @@ BASE_DIR = '/'
 DEBUG = os.getenv('DEBUG', False) == 'True'
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', "127.0.0.1, localhost").split(', ')
 
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'level': 'ERROR',
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'django.server': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+    },
+}
 
 INSTALLED_APPS = [
     'recipes.apps.RecipesConfig',
@@ -42,6 +77,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # 'django.middleware.locale.LocaleMiddleware',
+    'recipes.middleware.RequestLoggingMiddleware',
 ]
 
 ROOT_URLCONF = 'foodgram_backend.urls'
@@ -131,9 +167,10 @@ REST_FRAMEWORK = {
 
 AUTH_USER_MODEL = 'users.User'
 
-LOGS_ROOT = '/app/logs/'
-
 # To local debugging:
+# LOGS_ROOT = os.path.join(BASE_DIR, 'logs')
+# LOGS_MAX_BYTES = 5000000
+# LOGS_BACKUP_COUNT = 2
 
 # MEDIA_URL = '/media/'
 # MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -142,6 +179,9 @@ LOGS_ROOT = '/app/logs/'
 # STATIC_ROOT = BASE_DIR / 'collected_static'
 
 # To deploy to remote server:
+LOGS_ROOT = '/app/logs/'
+LOGS_MAX_BYTES = 5000000
+LOGS_BACKUP_COUNT = 2
 
 STATIC_URL = '/static/django/'
 STATIC_ROOT = '/app/static_django'

@@ -1,21 +1,23 @@
 
 import base64
 import logging
+from logging.handlers import RotatingFileHandler
 
 from django.core.files.base import ContentFile
-from foodgram_backend.settings import NAME_MAX_LENGTH
+from foodgram_backend.settings import (LOGS_BACKUP_COUNT, LOGS_MAX_BYTES,
+                                       LOGS_ROOT, NAME_MAX_LENGTH)
 from rest_framework import serializers
 from users.serializers import UserGETSerializer
 
-from foodgram_backend.settings import LOGS_ROOT
 from recipes.models import (Favorites, Ingredient, MeasurementUnit, Recipe,
                             RecipeIngredient, RecipeTag, ShoppingCart, Tag)
 from recipes.validators import validate_ingredients_amount
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
-handler = logging.FileHandler(f"{LOGS_ROOT}{__name__}.log", mode='w')
+logger.setLevel(logging.ERROR)
+handler = RotatingFileHandler(f"{LOGS_ROOT}{__name__}.log",
+                              maxBytes=LOGS_MAX_BYTES,
+                              backupCount=LOGS_BACKUP_COUNT)
 formatter = logging.Formatter("%(name)s %(asctime)s %(levelname)s %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
@@ -156,7 +158,9 @@ class RecipeSerializer(serializers.ModelSerializer):
             )
             for ingredient in ingredients
         ])
-        logger.info(f"RecipeIngredient objects created for recipe id={recipe.id}")
+        logger.info(
+            f"RecipeIngredient objects created for recipe id={recipe.id}"
+        )
         return recipe
 
     def to_representation(self, value):
