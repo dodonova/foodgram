@@ -7,8 +7,8 @@
 ## Как развернуть проект на своем сервере
 1. Установить веб-сервер nginx
 2. На сервере создать папку `foodgram`
-3. В папку скопировать файл [docker-compose.production.yml](https://github.com/dodonova/kittygram_final/blob/main/docker-compose.production.yml)
-4. В этой же папке создать файл `.env` в котором разместить информацию о переменных окружения. Пример в файле [.env.example](https://github.com/dodonova/kittygram_final/blob/main/.env.example)
+3. В папку скопировать файл [docker-compose.production.yml](https://github.com/dodonova/foodgram/blob/master/infra/docker-compose.production.yml)
+4. В этой же папке создать файл `.env` в котором разместить информацию о переменных окружения. Пример в файле [.env.example](https://github.com/dodonova/foodgram/blob/master/infra/.env.example)
 5. Отредактировать конфигурацию `nginx sudo nano /etc/nginx/sites-enabled/default` :
 ```
 server { 
